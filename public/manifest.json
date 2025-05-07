@@ -1,0 +1,29 @@
+{
+  "short_name": "仕分け職人",
+  "name": "仕分け職人 - 車種分類ゲーム",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0080ff",
+  "background_color": "#ffffff",
+  "description": "車種を素早く正確に分類するスキルを競うゲームアプリ",
+  "categories": ["games", "entertainment"],
+  "orientation": "portrait",
+  "prefer_related_applications": false
+}
