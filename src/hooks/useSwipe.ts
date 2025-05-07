@@ -4,6 +4,7 @@ import { useGame } from '../contexts/GameContext';
 /**
  * スワイプ処理のカスタムフック
  * react-swipeableを使用してスワイプイベントを処理し、ゲームコンテキストのhandleSwipe関数と連携します
+ * アニメーション効果を改善するため、設定を調整しています
  */
 export const useSwipe = (): SwipeableHandlers => {
   const { handleSwipe } = useGame();
@@ -14,13 +15,13 @@ export const useSwipe = (): SwipeableHandlers => {
     onSwipedRight: () => handleSwipe('right'),
     onSwipedDown: () => handleSwipe('down'),
     onSwipedLeft: () => handleSwipe('left'),
-    // preventDefaultTouchmoveEvent プロパティは最新のreact-swipeableでは使用できないため削除
-    // 代わりに同等の機能を持つpropertyを使用
-    touchEventOptions: { passive: false }, // タッチイベントをキャンセルしてスクロールを防止
+    // カスタムイベントを有効にする
     trackMouse: true, // マウスでもスワイプを検出
     trackTouch: true, // タッチでもスワイプを検出
-    delta: 50, // スワイプと認識するための最小距離
-    // minDistance プロパティも react-swipeable の最新バージョンではサポートされていないため削除
+    delta: 40, // スワイプと認識するための最小距離 (少し小さくして感度を上げる)
+    preventScrollOnSwipe: true, // スワイプ中のスクロールを防止
+    swipeDuration: 500, // スワイプが完了するまでの最大時間（ミリ秒）
+    touchEventOptions: { passive: false }, // タッチイベントをキャンセルしてスクロールを防止
     rotationAngle: 0, // 回転角度の補正
   };
   

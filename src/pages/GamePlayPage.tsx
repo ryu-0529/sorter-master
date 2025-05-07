@@ -15,57 +15,12 @@ import {
   useToast
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { FaClock, FaTimes, FaCheck } from 'react-icons/fa';
+import { FaClock } from 'react-icons/fa';
 import { useGame } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSwipe } from '../hooks/useSwipe';
-import { CarCategory, DirectionMap } from '../types';
-
-// 方向表示用のコンポーネント
-interface DirectionIndicatorProps {
-  direction: 'up' | 'down' | 'left' | 'right';
-  category: CarCategory;
-  isActive: boolean;
-}
-
-const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, category, isActive }) => {
-  return (
-    <Box
-      bg={isActive ? 'green.500' : 'gray.100'}
-      color={isActive ? 'white' : 'gray.600'}
-      px={2}
-      py={1}
-      borderRadius="md"
-      fontWeight="bold"
-      boxShadow="md"
-      textAlign="center"
-      transition="all 0.2s"
-      _hover={{ transform: 'scale(1.02)' }}
-      _active={{ transform: 'scale(0.98)' }}
-      _focus={{ outline: 'none', boxShadow: 'none' }}
-      width="120px"
-      height="60px"
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-      m={1}
-      sx={{
-        WebkitTapHighlightColor: "transparent",
-        "-webkit-tap-highlight-color": "rgba(0,0,0,0)",
-        outline: "none !important"
-      }}
-    >
-      <Text fontSize="md">{
-        direction === 'up' ? '↑' : 
-        direction === 'right' ? '→' : 
-        direction === 'down' ? '↓' : 
-        '←'
-      }</Text>
-      <Text fontSize="xs" isTruncated maxW="140px">{category}</Text>
-    </Box>
-  );
-};
+import DirectionIndicator from '../components/DirectionIndicator';
+import SwipableCarImage from '../components/SwipableCarImage';
 
 // メインのゲームプレイ画面
 const GamePlayPage: React.FC = () => {
@@ -100,6 +55,9 @@ const GamePlayPage: React.FC = () => {
   
   // 最後のスワイプ結果（正解/不正解）を管理
   const [lastResult, setLastResult] = useState<'correct' | 'incorrect' | null>(null);
+  
+  // スワイプ方向を管理 (アニメーション用)
+  const [swipeDirection, setSwipeDirection] = useState<'up' | 'down' | 'left' | 'right' | null>(null);
   
   // ゲーム終了時の処理
   useEffect(() => {
@@ -155,19 +113,20 @@ const GamePlayPage: React.FC = () => {
     // 画像のカテゴリと一致するかチェック
     const isCorrect = currentCar.category === expectedCategory;
     
+    // スワイプ方向を設定してアニメーションを開始
+    setSwipeDirection(direction);
+    
     // スワイプ結果を表示
     setLastResult(isCorrect ? 'correct' : 'incorrect');
-    
-    // 一定時間後に結果表示をリセット
-    setTimeout(() => {
-      setLastResult(null);
-    }, 1500);
     
     // ゲームロジックのスワイプ処理を呼び出し
     handleSwipe(direction);
     
-    // 注: ここではUIの更新は必要ありません。handleSwipe内でcurrentGameが更新されるため、
-    // Reactのレンダリングサイクルで自動的に方向インジケーターが更新されます。
+    // 一定時間後にアニメーション状態をリセット
+    setTimeout(() => {
+      setLastResult(null);
+      setSwipeDirection(null);
+    }, 500);
   };
   
   // ゲーム退出処理
@@ -269,6 +228,29 @@ const GamePlayPage: React.FC = () => {
         flexDirection="column"
         justifyContent="space-between"
         alignItems="center"
+        onClick={(e) => {
+          // カスタムイベントハンドラを追加し、react-swipeableが処理できるようにする
+          if (!gameReady) return;
+          
+          // カードがスワイプされたら対応する方向に応じてhandleSwipeWithAnimationを呼び出す
+          const swipeHandlerMap = {
+            'onSwipedUp': () => handleSwipeWithAnimation('up'),
+            'onSwipedRight': () => handleSwipeWithAnimation('right'),
+            'onSwipedDown': () => handleSwipeWithAnimation('down'),
+            'onSwipedLeft': () => handleSwipeWithAnimation('left')
+          };
+          
+          // react-swipeableのイベントと連携
+          Object.entries(swipeHandlers).forEach(([key, handler]) => {
+            if (typeof handler === 'function' && key in swipeHandlerMap) {
+              // @ts-ignore
+              const swipeAction = swipeHandlerMap[key];
+              // 通常のスワイプハンドラに加えて、アニメーション処理を行う
+              handler(e);
+              swipeAction();
+            }
+          });
+        }}
       >
         {/* カウントダウンオーバーレイ */}
         {!gameReady && (
@@ -315,70 +297,18 @@ const GamePlayPage: React.FC = () => {
             </Text>
           </Flex>
         )}
-        {/* 車の画像 */}
-        <Box
-          w="90%"
-          h="70%"
-          maxW="650px"
-          maxH="450px"
-          borderRadius="lg"
-          overflow="hidden"
-          boxShadow="xl"
-          position="relative"
-          mt={4}
-          mb={3}
-          className="css-y53gux"
-        >
-          <Box
-            as="img"
-            src={currentCar?.imageUrl || '/images/placeholder-car.jpg'}
-            alt={`車種: ${currentCar?.category || '不明'}`}
-            w="100%"
-            h="100%"
-            objectFit="cover"
-            filter={lastResult ? 'blur(2px)' : 'none'}
-          />
-          
-          {/* スワイプ結果の表示 */}
-          {lastResult && (
-            <Flex
-              position="absolute"
-              top="0"
-              left="0"
-              w="100%"
-              h="100%"
-              bg={lastResult === 'correct' ? 'green.500' : 'red.500'}
-              opacity="0.7"
-              justifyContent="center"
-              alignItems="center"
-              flexDirection="column"
-            >
-              <Icon 
-                as={lastResult === 'correct' ? FaCheck : FaTimes} 
-                boxSize={24} 
-                color="white" 
-                mb={3}
-              />
-              <Text
-                color="white"
-                fontSize="4xl"
-                fontWeight="extrabold"
-                textShadow="0 0 12px rgba(0,0,0,0.7)"
-                textAlign="center"
-                px={4}
-                transform="scale(1.2)"
-                transition="transform 0.3s ease-in-out"
-              >
-                {lastResult === 'correct' ? '正解！' : '不正解！'}
-              </Text>
-            </Flex>
-          )}
-        </Box>
+        
+        {/* 車の画像 (スワイプアニメーション付き) */}
+        <SwipableCarImage 
+          car={currentCar} 
+          lastResult={lastResult} 
+          swipeDirection={swipeDirection}
+        />
         
         {/* 方向インジケーター (十字キー形式に配置) */}
         <Box
           w="100%"
-          maxW="260px"
+          maxW="360px"
           display="flex"
           flexDirection="column"
           alignItems="center"
