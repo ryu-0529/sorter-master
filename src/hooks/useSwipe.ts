@@ -14,11 +14,13 @@ export const useSwipe = (): SwipeableHandlers => {
     onSwipedRight: () => handleSwipe('right'),
     onSwipedDown: () => handleSwipe('down'),
     onSwipedLeft: () => handleSwipe('left'),
-    preventDefaultTouchmoveEvent: true, // タッチイベントをキャンセルしてスクロールを防止
+    // preventDefaultTouchmoveEvent プロパティは最新のreact-swipeableでは使用できないため削除
+    // 代わりに同等の機能を持つpropertyを使用
+    touchEventOptions: { passive: false }, // タッチイベントをキャンセルしてスクロールを防止
     trackMouse: true, // マウスでもスワイプを検出
     trackTouch: true, // タッチでもスワイプを検出
     delta: 50, // スワイプと認識するための最小距離
-    minDistance: 50, // スワイプと認識するための最小距離（ピクセル）
+    // minDistance プロパティも react-swipeable の最新バージョンではサポートされていないため削除
     rotationAngle: 0, // 回転角度の補正
   };
   

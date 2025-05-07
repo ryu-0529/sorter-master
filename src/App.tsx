@@ -3,6 +3,7 @@ import { ChakraProvider, extendTheme } from '@chakra-ui/react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { GameProvider } from './contexts/GameContext';
+import WelcomePage from './pages/WelcomePage';
 import HomePage from './pages/HomePage';
 import GameModePage from './pages/GameModePage';
 import GamePlayPage from './pages/GamePlayPage';
@@ -73,7 +74,8 @@ function App() {
         <GameProvider>
           <Router>
             <Routes>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<WelcomePage />} />
+              <Route path="/home" element={<HomePage />} />
               <Route path="/modes" element={<GameModePage />} />
               <Route path="/play" element={<GamePlayPage />} />
               <Route path="/result" element={<ResultPage />} />

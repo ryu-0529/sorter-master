@@ -198,13 +198,26 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     
     const matchmaking = snapshot.val();
     // 待機中のゲームを探す
+    // マッチメイキングデータにインターフェイスを定義して型安全性を確保
+    interface MatchmakingGame {
+      status: string;
+      playerCount: number;
+      creatorId: string;
+      created: number;
+    }
+    
     const waitingGames = Object.entries(matchmaking)
-      .filter(([_, game]: [string, any]) => 
-        game.status === 'waiting' && 
-        game.playerCount < 4 && 
-        game.creatorId !== currentUser.uid
-      )
-      .sort((a, b) => a[1].created - b[1].created);
+      .filter(([_, game]) => {
+        const typedGame = game as MatchmakingGame;
+        return typedGame.status === 'waiting' && 
+               typedGame.playerCount < 4 && 
+               typedGame.creatorId !== currentUser.uid;
+      })
+      .sort((a, b) => {
+        const gameA = a[1] as MatchmakingGame;
+        const gameB = b[1] as MatchmakingGame;
+        return gameA.created - gameB.created;
+      });
     
     if (waitingGames.length === 0) {
       // 待機中のゲームがなければ新しいゲームを作成

@@ -157,10 +157,11 @@ const GameModePage: React.FC = () => {
                   他のプレイヤーとリアルタイムで対戦！
                   同じカードセットで正確さとスピードを競い合おう。
                 </Text>
-                <HStack spacing={4}>
+                <VStack spacing={4} align="flex-start">
                   <Button 
                     colorScheme="green" 
                     onClick={handleJoinMultiplayer}
+                    width="200px"
                   >
                     マッチメイキング
                   </Button>
@@ -168,10 +169,11 @@ const GameModePage: React.FC = () => {
                     variant="outline" 
                     colorScheme="green"
                     onClick={handleCreateMultiplayer}
+                    width="200px"
                   >
                     ルーム作成
                   </Button>
-                </HStack>
+                </VStack>
               </VStack>
             </HStack>
           </Box>
