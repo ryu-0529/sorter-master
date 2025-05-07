@@ -39,6 +39,19 @@ const theme = extendTheme({
         bg: 'gray.50',
         color: 'gray.800',
       },
+      '@keyframes pulse': {
+        '0%': { transform: 'scale(1)' },
+        '50%': { transform: 'scale(1.2)' },
+        '100%': { transform: 'scale(1)' },
+      },
+      '@keyframes fadeIn': {
+        '0%': { opacity: 0 },
+        '100%': { opacity: 1 },
+      },
+      '@keyframes bounce': {
+        '0%, 100%': { transform: 'translateY(0)' },
+        '50%': { transform: 'translateY(-20px)' },
+      },
     },
   },
   components: {

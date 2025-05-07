@@ -29,33 +29,8 @@ interface DirectionIndicatorProps {
 }
 
 const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, category, isActive }) => {
-  // 方向に応じた表示位置と矢印スタイルを設定
-  const getPosition = () => {
-    switch (direction) {
-      case 'up':
-        return { top: '10%', left: '50%', transform: 'translateX(-50%)' };
-      case 'right':
-        return { top: '50%', right: '10%', transform: 'translateY(-50%)' };
-      case 'down':
-        return { bottom: '10%', left: '50%', transform: 'translateX(-50%)' };
-      case 'left':
-        return { top: '50%', left: '10%', transform: 'translateY(-50%)' };
-    }
-  };
-
-  const getArrow = () => {
-    switch (direction) {
-      case 'up': return '↑';
-      case 'right': return '→';
-      case 'down': return '↓';
-      case 'left': return '←';
-    }
-  };
-
   return (
     <Box
-      position="absolute"
-      {...getPosition()}
       bg={isActive ? 'green.500' : 'gray.100'}
       color={isActive ? 'white' : 'gray.600'}
       px={4}
@@ -63,13 +38,23 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
       borderRadius="md"
       fontWeight="bold"
       boxShadow="md"
-      zIndex={10}
       textAlign="center"
       transition="all 0.2s"
       _hover={{ bg: 'brand.500', color: 'white' }}
+      width="160px"
+      height="80px"
+      display="flex"
+      flexDirection="column"
+      justifyContent="center"
+      alignItems="center"
     >
-      <Text fontSize="2xl">{getArrow()}</Text>
-      <Text fontSize="sm">{category}</Text>
+      <Text fontSize="2xl">{
+        direction === 'up' ? '↑' : 
+        direction === 'right' ? '→' : 
+        direction === 'down' ? '↓' : 
+        '←'
+      }</Text>
+      <Text fontSize="sm" isTruncated maxW="140px">{category}</Text>
     </Box>
   );
 };
@@ -98,6 +83,10 @@ const GamePlayPage: React.FC = () => {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   
+  // カウントダウン状態を管理
+  const [countdown, setCountdown] = useState<number | null>(3);
+  const [gameReady, setGameReady] = useState<boolean>(false);
+  
   // ゲーム開始からの経過時間を管理
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   
@@ -112,9 +101,31 @@ const GamePlayPage: React.FC = () => {
     }
   }, [gameResult, submitScore, navigate]);
   
+  // カウントダウンを管理
+  useEffect(() => {
+    if (!isGameActive || !currentGame || gameReady) return;
+    
+    if (countdown === null) {
+      // カウントダウンが終了したらゲームを開始
+      setGameReady(true);
+      return;
+    }
+    
+    // 1秒ごとにカウントダウン
+    const countdownTimer = setTimeout(() => {
+      if (countdown > 1) {
+        setCountdown(countdown - 1);
+      } else {
+        setCountdown(null); // カウントダウン終了
+      }
+    }, 1000);
+    
+    return () => clearTimeout(countdownTimer);
+  }, [countdown, isGameActive, currentGame, gameReady]);
+  
   // タイマーを管理
   useEffect(() => {
-    if (!isGameActive || !currentGame) return;
+    if (!isGameActive || !currentGame || !gameReady) return;
     
     const startTime = currentGame.startTime;
     const timer = setInterval(() => {
@@ -124,14 +135,16 @@ const GamePlayPage: React.FC = () => {
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [isGameActive, currentGame]);
+  }, [isGameActive, currentGame, gameReady]);
   
   // スワイプ処理のラッパー関数（結果表示のアニメーション用）
   const handleSwipeWithAnimation = (direction: 'up' | 'down' | 'left' | 'right') => {
-    if (!currentGame || currentCarIndex >= cars.length) return;
+    if (!currentGame || currentCarIndex >= cars.length || !gameReady) return;
     
     const currentCar = cars[currentCarIndex];
     const expectedCategory = currentGame.directionMap[direction];
+    
+    // 画像のカテゴリと一致するかチェック
     const isCorrect = currentCar.category === expectedCategory;
     
     // スワイプ結果を表示
@@ -140,10 +153,13 @@ const GamePlayPage: React.FC = () => {
     // 一定時間後に結果表示をリセット
     setTimeout(() => {
       setLastResult(null);
-    }, 500);
+    }, 1500);
     
     // ゲームロジックのスワイプ処理を呼び出し
     handleSwipe(direction);
+    
+    // 注: ここではUIの更新は必要ありません。handleSwipe内でcurrentGameが更新されるため、
+    // Reactのレンダリングサイクルで自動的に方向インジケーターが更新されます。
   };
   
   // ゲーム退出処理
@@ -236,25 +252,61 @@ const GamePlayPage: React.FC = () => {
       
       {/* メインのゲーム画面 */}
       <Box 
-        {...swipeHandlers}
+        {...(gameReady ? swipeHandlers : {})}
         h="calc(100vh - 150px)"
         position="relative"
         overflow="hidden"
         bg="gray.50"
         display="flex"
-        justifyContent="center"
+        flexDirection="column"
+        justifyContent="space-between"
         alignItems="center"
       >
-        {/* 方向インジケーター */}
-        {Object.entries(currentGame.directionMap).map(([direction, category]) => (
-          <DirectionIndicator 
-            key={direction}
-            direction={direction as 'up' | 'down' | 'left' | 'right'}
-            category={category}
-            isActive={false}
-          />
-        ))}
-        
+        {/* カウントダウンオーバーレイ */}
+        {!gameReady && (
+          <Flex
+            position="absolute"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            bg="rgba(0, 0, 0, 0.7)"
+            zIndex="10"
+            justifyContent="center"
+            alignItems="center"
+            flexDirection="column"
+          >
+            <Text
+              fontSize="8xl"
+              fontWeight="extrabold"
+              color="white"
+              textShadow="0 0 20px rgba(255, 255, 255, 0.7)"
+              animation="pulse 1s infinite"
+              transform="scale(1.5)"
+              mb={5}
+            >
+              {countdown}
+            </Text>
+            <Text
+              fontSize="3xl"
+              fontWeight="bold"
+              color="white"
+              mt={4}
+              animation="fadeIn 1s ease-in-out"
+              textShadow="0 0 10px rgba(255, 255, 255, 0.5)"
+            >
+              準備をしてください！
+            </Text>
+            <Text
+              fontSize="xl"
+              color="gray.300"
+              mt={8}
+              animation="bounce 2s infinite"
+            >
+              スワイプの準備をしよう
+            </Text>
+          </Flex>
+        )}
         {/* 車の画像 */}
         <Box
           w="80%"
@@ -265,6 +317,9 @@ const GamePlayPage: React.FC = () => {
           overflow="hidden"
           boxShadow="xl"
           position="relative"
+          mt={8}
+          mb="auto"
+          className="css-y53gux"
         >
           <Box
             as="img"
@@ -288,30 +343,97 @@ const GamePlayPage: React.FC = () => {
               opacity="0.7"
               justifyContent="center"
               alignItems="center"
+              flexDirection="column"
             >
               <Icon 
                 as={lastResult === 'correct' ? FaCheck : FaTimes} 
-                boxSize={20} 
+                boxSize={24} 
                 color="white" 
+                mb={3}
               />
+              <Text
+                color="white"
+                fontSize="4xl"
+                fontWeight="extrabold"
+                textShadow="0 0 12px rgba(0,0,0,0.7)"
+                textAlign="center"
+                px={4}
+                transform="scale(1.2)"
+                transition="transform 0.3s ease-in-out"
+              >
+                {lastResult === 'correct' ? '正解！' : '不正解！'}
+              </Text>
             </Flex>
           )}
         </Box>
         
-        {/* カテゴリの指示 */}
+        {/* 方向インジケーター (十字キー形式に配置) */}
         <Box
-          position="absolute"
-          top="10px"
-          left="50%"
-          transform="translateX(-50%)"
-          bg="rgba(0, 0, 0, 0.7)"
-          color="white"
-          p={2}
-          borderRadius="md"
-          fontSize="lg"
-          fontWeight="bold"
+          w="100%"
+          maxW="300px"
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          pb={4}
+          mt="auto"
         >
-          カードを正しい方向にスワイプしてください
+          {/* 上方向 */}
+          <Box mb={2}>
+            {Object.entries(currentGame.directionMap)
+              .filter(([dir]) => dir === 'up')
+              .map(([direction, category]) => (
+                <DirectionIndicator 
+                  key={direction}
+                  direction={direction as 'up' | 'down' | 'left' | 'right'}
+                  category={category}
+                  isActive={false}
+                />
+              ))}
+          </Box>
+          
+          {/* 左右方向 */}
+          <Flex justifyContent="center" alignItems="center" w="100%" mb={2}>
+            <Box mr={4}>
+              {Object.entries(currentGame.directionMap)
+                .filter(([dir]) => dir === 'left')
+                .map(([direction, category]) => (
+                  <DirectionIndicator 
+                    key={direction}
+                    direction={direction as 'up' | 'down' | 'left' | 'right'}
+                    category={category}
+                    isActive={false}
+                  />
+                ))}
+            </Box>
+            
+            <Box ml={4}>
+              {Object.entries(currentGame.directionMap)
+                .filter(([dir]) => dir === 'right')
+                .map(([direction, category]) => (
+                  <DirectionIndicator 
+                    key={direction}
+                    direction={direction as 'up' | 'down' | 'left' | 'right'}
+                    category={category}
+                    isActive={false}
+                  />
+                ))}
+            </Box>
+          </Flex>
+          
+          {/* 下方向 */}
+          <Box>
+            {Object.entries(currentGame.directionMap)
+              .filter(([dir]) => dir === 'down')
+              .map(([direction, category]) => (
+                <DirectionIndicator 
+                  key={direction}
+                  direction={direction as 'up' | 'down' | 'left' | 'right'}
+                  category={category}
+                  isActive={false}
+                />
+              ))}
+          </Box>
         </Box>
       </Box>
     </Container>

@@ -131,10 +131,10 @@ const WelcomePage: React.FC = () => {
   };
 
   return (
-    <Container maxW="container.md" py={8} centerContent>
+    <Container maxW="container.md" py={8}>
       <VStack spacing={8} align="stretch" w="full">
         {/* ロゴとタイトル */}
-        <VStack spacing={4} align="center">
+        <VStack spacing={4} alignItems="center">
           <Image
             src="/images/logo.svg"
             alt="仕分け職人ロゴ"
@@ -169,7 +169,7 @@ const WelcomePage: React.FC = () => {
               <TabPanel>
                 <VStack spacing={6}>
                   <form onSubmit={handleEmailLogin} style={{ width: '100%' }}>
-                    <VStack spacing={4}>
+                    <VStack spacing={4} alignItems="flex-start">
                       <FormControl id="email" isRequired>
                         <FormLabel>メールアドレス</FormLabel>
                         <Input
@@ -242,20 +242,11 @@ const WelcomePage: React.FC = () => {
               
               {/* ゲストプレイパネル */}
               <TabPanel>
-                <VStack spacing={6} align="stretch">
+                  <VStack align="flex-start" spacing={4}>
                   <Text textAlign="center">
                     アカウント登録なしで手軽にプレイできます。
-                    ただし、スコアやプレイ履歴は保存されない場合があります。
+                    ただし、スコアやプレイ履歴は保存されません。
                   </Text>
-                  
-                  <Image
-                    src="/images/guest-play.svg"
-                    alt="ゲストプレイ"
-                    fallbackSrc="https://via.placeholder.com/300x150?text=ゲストプレイ"
-                    alignSelf="center"
-                    maxH="150px"
-                    my={4}
-                  />
                   
                   <Button
                     colorScheme="teal"
@@ -268,7 +259,7 @@ const WelcomePage: React.FC = () => {
                   </Button>
                   
                   <Text fontSize="sm" textAlign="center" color="gray.500">
-                    あとからアカウント登録することもできます
+                    あとからアカウント登録できます
                   </Text>
                 </VStack>
               </TabPanel>
