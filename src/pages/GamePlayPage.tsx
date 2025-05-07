@@ -33,28 +33,36 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
     <Box
       bg={isActive ? 'green.500' : 'gray.100'}
       color={isActive ? 'white' : 'gray.600'}
-      px={4}
-      py={2}
+      px={2}
+      py={1}
       borderRadius="md"
       fontWeight="bold"
       boxShadow="md"
       textAlign="center"
       transition="all 0.2s"
-      _hover={{ bg: 'brand.500', color: 'white' }}
-      width="160px"
-      height="80px"
+      _hover={{ transform: 'scale(1.02)' }}
+      _active={{ transform: 'scale(0.98)' }}
+      _focus={{ outline: 'none', boxShadow: 'none' }}
+      width="120px"
+      height="60px"
       display="flex"
       flexDirection="column"
       justifyContent="center"
       alignItems="center"
+      m={1}
+      sx={{
+        WebkitTapHighlightColor: "transparent",
+        "-webkit-tap-highlight-color": "rgba(0,0,0,0)",
+        outline: "none !important"
+      }}
     >
-      <Text fontSize="2xl">{
+      <Text fontSize="md">{
         direction === 'up' ? '↑' : 
         direction === 'right' ? '→' : 
         direction === 'down' ? '↓' : 
         '←'
       }</Text>
-      <Text fontSize="sm" isTruncated maxW="140px">{category}</Text>
+      <Text fontSize="xs" isTruncated maxW="140px">{category}</Text>
     </Box>
   );
 };
@@ -309,16 +317,16 @@ const GamePlayPage: React.FC = () => {
         )}
         {/* 車の画像 */}
         <Box
-          w="80%"
-          h="60%"
-          maxW="500px"
-          maxH="300px"
+          w="90%"
+          h="70%"
+          maxW="650px"
+          maxH="450px"
           borderRadius="lg"
           overflow="hidden"
           boxShadow="xl"
           position="relative"
-          mt={8}
-          mb="auto"
+          mt={4}
+          mb={3}
           className="css-y53gux"
         >
           <Box
@@ -370,16 +378,25 @@ const GamePlayPage: React.FC = () => {
         {/* 方向インジケーター (十字キー形式に配置) */}
         <Box
           w="100%"
-          maxW="300px"
+          maxW="260px"
           display="flex"
           flexDirection="column"
           alignItems="center"
           justifyContent="center"
-          pb={4}
+          pb={0}
           mt="auto"
+          sx={{
+            WebkitTapHighlightColor: "transparent",
+            "-webkit-tap-highlight-color": "rgba(0,0,0,0)",
+            "& *": {
+              WebkitTapHighlightColor: "transparent",
+              "-webkit-tap-highlight-color": "rgba(0,0,0,0)",
+              outline: "none !important"
+            }
+          }}
         >
           {/* 上方向 */}
-          <Box mb={2}>
+          <Box mb={1}>
             {Object.entries(currentGame.directionMap)
               .filter(([dir]) => dir === 'up')
               .map(([direction, category]) => (
@@ -393,8 +410,8 @@ const GamePlayPage: React.FC = () => {
           </Box>
           
           {/* 左右方向 */}
-          <Flex justifyContent="center" alignItems="center" w="100%" mb={2}>
-            <Box mr={4}>
+          <Flex justifyContent="center" alignItems="center" w="100%" mb={1}>
+            <Box mr={2}>
               {Object.entries(currentGame.directionMap)
                 .filter(([dir]) => dir === 'left')
                 .map(([direction, category]) => (
@@ -407,7 +424,7 @@ const GamePlayPage: React.FC = () => {
                 ))}
             </Box>
             
-            <Box ml={4}>
+            <Box ml={2}>
               {Object.entries(currentGame.directionMap)
                 .filter(([dir]) => dir === 'right')
                 .map(([direction, category]) => (
