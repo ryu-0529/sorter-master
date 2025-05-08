@@ -26,7 +26,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const ResultPage: React.FC = () => {
   const navigate = useNavigate();
-  const { gameResult, rankings, fetchRankings } = useGame();
+  const { gameResult, rankings, fetchRankings, startSinglePlayerGame } = useGame();
   const { currentUser } = useAuth();
   
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -94,12 +94,14 @@ const ResultPage: React.FC = () => {
   
   // ゲームをリトライ
   const handleRetry = () => {
-    navigate('/modes');
+    // 直接ゲームを開始する
+    startSinglePlayerGame();
+    navigate('/play');
   };
   
-  // ホームに戻る
-  const handleBackToHome = () => {
-    navigate('/');
+  // ゲームモード選択へ
+  const handleBackToModes = () => {
+    navigate('/modes');
   };
   
   return (
@@ -167,9 +169,9 @@ const ResultPage: React.FC = () => {
               <Button 
                 leftIcon={<Icon as={FaHome} />} 
                 variant="outline" 
-                onClick={handleBackToHome}
+                onClick={handleBackToModes}
               >
-                ホームに戻る
+                ゲームモード選択へ
               </Button>
             </HStack>
           </VStack>

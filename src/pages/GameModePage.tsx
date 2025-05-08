@@ -91,7 +91,7 @@ const GameModePage: React.FC = () => {
   
   // ホーム画面へ戻る
   const handleBackToHome = () => {
-    navigate('/');
+    navigate('/home');
   };
   
   return (
