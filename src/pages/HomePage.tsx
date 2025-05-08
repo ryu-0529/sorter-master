@@ -90,7 +90,7 @@ const HomePage: React.FC = () => {
         {/* フッター */}
         <VStack spacing={2} pt={4}>
           <Text fontSize="sm" color="gray.500">
-            仕分け職人 v0.1.0
+            仕分け職人 v1.0.0
           </Text>
           <Text fontSize="xs" color="gray.400">
             © 2025 Sorter Master App

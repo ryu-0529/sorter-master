@@ -135,12 +135,12 @@ const WelcomePage: React.FC = () => {
       <VStack spacing={8} align="stretch" w="full">
         {/* ロゴとタイトル */}
         <VStack spacing={4} alignItems="center">
-          <Image
-            src="/images/logo.svg"
+          {/* <Image
+            // src="/images/logo.svg"
             alt="仕分け職人ロゴ"
-            boxSize="150px"
+            boxSize="10px"
             fallbackSrc="https://via.placeholder.com/150?text=仕分け職人"
-          />
+          /> */}
           <Heading as="h1" size="xl" color="brand.500" textAlign="center">
             仕分け職人
           </Heading>

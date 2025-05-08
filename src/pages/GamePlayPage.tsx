@@ -228,6 +228,7 @@ const GamePlayPage: React.FC = () => {
         flexDirection="column"
         justifyContent="space-between"
         alignItems="center"
+        px={2}
         onClick={(e) => {
           // カスタムイベントハンドラを追加し、react-swipeableが処理できるようにする
           if (!gameReady) return;
@@ -252,15 +253,15 @@ const GamePlayPage: React.FC = () => {
           });
         }}
       >
-        {/* カウントダウンオーバーレイ */}
-        {!gameReady && (
+        {!gameReady ? (
+          /* カウントダウン中は車の画像を表示せず、カウントダウンのみを表示する */
           <Flex
             position="absolute"
             top="0"
             left="0"
             right="0"
             bottom="0"
-            bg="rgba(0, 0, 0, 0.7)"
+            bg="black" /* 完全に不透明な黒色背景 */
             zIndex="10"
             justifyContent="center"
             alignItems="center"
@@ -296,16 +297,18 @@ const GamePlayPage: React.FC = () => {
               スワイプの準備をしよう
             </Text>
           </Flex>
+        ) : (
+          /* カウントダウン終了後のみ車の画像を表示 */
+          <Box display="flex" justifyContent="center" alignItems="center" flex="1">
+            <SwipableCarImage 
+              car={currentCar} 
+              lastResult={lastResult} 
+              swipeDirection={swipeDirection}
+            />
+          </Box>
         )}
         
-        {/* 車の画像 (スワイプアニメーション付き) */}
-        <SwipableCarImage 
-          car={currentCar} 
-          lastResult={lastResult} 
-          swipeDirection={swipeDirection}
-        />
-        
-        {/* 方向インジケーター (十字キー形式に配置) */}
+        {/* 方向インジケーター (十字キー形式に配置) - 常に表示 */}
         <Box
           w="100%"
           maxW="360px"
@@ -313,7 +316,7 @@ const GamePlayPage: React.FC = () => {
           flexDirection="column"
           alignItems="center"
           justifyContent="center"
-          pb={0}
+          pb={2}
           mt="auto"
           sx={{
             WebkitTapHighlightColor: "transparent",

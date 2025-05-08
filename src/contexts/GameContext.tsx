@@ -28,16 +28,15 @@ const CAR_CATEGORIES: CarCategory[] = [
 
 // ダミーの車データ (実際のアプリでは画像URLを適切に設定)
 const DUMMY_CARS: Car[] = [
-  { id: '1', imageUrl: '/images/car1.jpg', category: 'セダン' },
-  { id: '2', imageUrl: '/images/car2.jpg', category: 'SUV' },
-  { id: '3', imageUrl: '/images/car3.jpg', category: 'コンパクト' },
-  { id: '4', imageUrl: '/images/car4.jpg', category: '軽自動車' },
-  { id: '5', imageUrl: '/images/car5.jpg', category: 'ミニバン' },
-  { id: '6', imageUrl: '/images/car6.jpg', category: 'クロスカントリー' },
-  { id: '7', imageUrl: '/images/car7.jpg', category: 'ワンボックス' },
-  { id: '8', imageUrl: '/images/car8.jpg', category: 'ステーションワゴン' },
-  { id: '9', imageUrl: '/images/car9.jpg', category: 'クーペ' },
-  { id: '10', imageUrl: '/images/car10.jpg', category: 'セダン' }
+  { id: '1', imageUrl: '/images/cars/car1.png', category: 'クロスカントリー' },
+  { id: '2', imageUrl: '/images/cars/car2.png', category: 'SUV' },
+  { id: '3', imageUrl: '/images/cars/car3.png', category: '軽自動車' },
+  { id: '4', imageUrl: '/images/cars/car4.png', category: 'ミニバン' },
+  { id: '5', imageUrl: '/images/cars/car5.png', category: 'ワンボックス' },
+  { id: '6', imageUrl: '/images/cars/car6.png', category: 'コンパクト' },
+  { id: '7', imageUrl: '/images/cars/car7.png', category: 'セダン' },
+  { id: '8', imageUrl: '/images/cars/car8.png', category: 'ステーションワゴン' },
+  { id: '9', imageUrl: '/images/cars/car9.png', category: 'クーペ' }
 ];
 
 interface GameContextProps {

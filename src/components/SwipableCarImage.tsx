@@ -39,24 +39,27 @@ const SwipableCarImage: React.FC<SwipableCarImageProps> = ({ car, lastResult, sw
   
   return (
     <Box
-      w="90%"
-      h="70%"
-      maxW="650px"
-      maxH="450px"
+      w="350px"
+      h="410px"
       borderRadius="lg"
       overflow="hidden"
       boxShadow="xl"
       position="relative"
       mt={4}
       mb={3}
+      mx="auto"
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      backgroundColor="white"
     >
       <Box
         as="img"
         src={car?.imageUrl || '/images/placeholder-car.jpg'}
         alt={`車種: ${car?.category || '不明'}`}
-        w="100%"
-        h="100%"
-        objectFit="cover"
+        maxW="100%"
+        maxH="100%"
+        objectFit="contain"
         filter={lastResult ? 'blur(2px)' : 'none'}
         style={getSwipeAnimation()}
       />
