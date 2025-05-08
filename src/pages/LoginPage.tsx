@@ -13,6 +13,7 @@ import {
   InputGroup,
   InputRightElement,
   Icon,
+  Image,
   useColorModeValue,
   useToast,
   Divider
@@ -58,7 +59,7 @@ const LoginPage: React.FC = () => {
         duration: 3000,
         isClosable: true,
       });
-      navigate('/');
+      navigate('/home');
     } catch (error) {
       toast({
         title: 'ログインエラー',
@@ -83,7 +84,7 @@ const LoginPage: React.FC = () => {
         duration: 3000,
         isClosable: true,
       });
-      navigate('/');
+      navigate('/home');
     } catch (error) {
       toast({
         title: 'ログインエラー',
@@ -109,7 +110,7 @@ const LoginPage: React.FC = () => {
         duration: 3000,
         isClosable: true,
       });
-      navigate('/');
+      navigate('/home');
     } catch (error) {
       toast({
         title: 'ログインエラー',
@@ -201,9 +202,17 @@ const LoginPage: React.FC = () => {
           
           <VStack spacing={4}>
             <Button 
-              leftIcon={<Icon as={FaGoogle} />} 
-              colorScheme="red" 
-              variant="outline" 
+              leftIcon={<Image src="/images/google-logo.svg" alt="Google logo" boxSize="18px" />}
+              bg="white"
+              color="#1F1F1F"
+              fontFamily="Roboto, sans-serif"
+              fontWeight="500"
+              border="1px"
+              borderColor="#dadce0"
+              borderRadius="4px"
+              height="40px"
+              px={4}
+              _hover={{ boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.3)" }}
               w="full"
               onClick={handleGoogleLogin}
               isLoading={isLoading}

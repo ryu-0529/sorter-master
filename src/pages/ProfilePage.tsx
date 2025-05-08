@@ -22,7 +22,8 @@ import {
   ModalFooter,
   ModalCloseButton,
   useDisclosure,
-  Icon
+  Icon,
+  Image
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaGoogle, FaArrowLeft, FaSignOutAlt } from 'react-icons/fa';
@@ -178,7 +179,12 @@ const ProfilePage: React.FC = () => {
   
   // ホームに戻る
   const handleBackToHome = () => {
-    navigate('/');
+    // ログイン済みの場合はホーム画面に、そうでない場合はトップページに戻る
+    if (currentUser) {
+      navigate('/home');
+    } else {
+      navigate('/');
+    }
   };
   
   return (
@@ -252,13 +258,21 @@ const ProfilePage: React.FC = () => {
                     アカウントを登録する
                   </Button>
                   <Button 
-                    leftIcon={<Icon as={FaGoogle} />} 
-                    colorScheme="red" 
-                    variant="outline" 
+                    leftIcon={<Image src="/images/google-logo.svg" alt="Google logo" boxSize="18px" />}
+                    bg="white"
+                    color="#1F1F1F"
+                    fontFamily="Roboto, sans-serif"
+                    fontWeight="500"
+                    border="1px"
+                    borderColor="#dadce0"
+                    borderRadius="4px"
+                    height="40px"
+                    px={4}
+                    _hover={{ boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.3)" }}
                     w="full"
                     onClick={handleLinkWithGoogle}
                   >
-                    Googleアカウントと連携
+                    Googleでログイン
                   </Button>
                 </>
               ) : (
@@ -299,8 +313,17 @@ const ProfilePage: React.FC = () => {
               </Button>
               
               <Button 
-                leftIcon={<Icon as={FaGoogle} />} 
-                colorScheme="red" 
+                leftIcon={<Image src="/images/google-logo.svg" alt="Google logo" boxSize="18px" />}
+                bg="white"
+                color="#1F1F1F"
+                fontFamily="Roboto, sans-serif"
+                fontWeight="500"
+                border="1px"
+                borderColor="#dadce0"
+                borderRadius="4px"
+                height="40px"
+                px={4}
+                _hover={{ boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.3)" }}
                 w="full"
                 onClick={handleGoogleLogin}
               >

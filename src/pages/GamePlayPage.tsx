@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   Box, 
   Container, 
@@ -39,9 +39,6 @@ const GamePlayPage: React.FC = () => {
   } = useGame();
   const { currentUser } = useAuth();
   
-  // スワイプハンドラーを取得
-  const swipeHandlers = useSwipe();
-  
   // 色設定
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -58,6 +55,39 @@ const GamePlayPage: React.FC = () => {
   
   // スワイプ方向を管理 (アニメーション用)
   const [swipeDirection, setSwipeDirection] = useState<'up' | 'down' | 'left' | 'right' | null>(null);
+  
+  // スワイプ中のドラッグ状態を管理
+  const [swiping, setSwiping] = useState<boolean>(false);
+  const [swipeDelta, setSwipeDelta] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  
+  // 現在のスワイプの軌跡を追跡
+  const swipeTrailRef = useRef<Array<{ x: number; y: number }>>([]);
+  
+  // アニメーション状態を管理
+  const [animating, setAnimating] = useState<boolean>(false);
+  
+  // カード状態の追跡（強制的に再レンダリングさせるため）
+  const [cardRenderKey, setCardRenderKey] = useState<number>(0);
+  
+  // スワイプ中のコールバック
+  const handleSwiping = (deltaX: number, deltaY: number) => {
+    if (animating) return; // アニメーション中はドラッグしない
+    
+    setSwiping(true);
+    setSwipeDelta({ x: deltaX, y: deltaY });
+    
+    // スワイプの軌跡を記録（最大10ポイント）
+    const newPoint = { x: deltaX, y: deltaY };
+    swipeTrailRef.current = [...swipeTrailRef.current.slice(-9), newPoint];
+  };
+  
+  // スワイプハンドラーを取得（スワイプ中のコールバックを渡す）
+  const swipeHandlers = useSwipe(handleSwiping);
+  
+  // currentCarIndex が変わったら cardRenderKey を更新して再レンダリングを強制
+  useEffect(() => {
+    setCardRenderKey(prev => prev + 1);
+  }, [currentCarIndex]);
   
   // ゲーム終了時の処理
   useEffect(() => {
@@ -103,9 +133,46 @@ const GamePlayPage: React.FC = () => {
     return () => clearInterval(timer);
   }, [isGameActive, currentGame, gameReady]);
   
+  // スワイプの方向を計算する関数 - 画面の境界に基づいて判定
+  const calculateSwipeDirection = (points: Array<{ x: number; y: number }>): 'up' | 'down' | 'left' | 'right' | null => {
+    if (points.length === 0) return null;
+    
+    // 最後のポイントを取得
+    const lastPoint = points[points.length - 1];
+    const { x, y } = lastPoint;
+    
+    // デバッグ情報
+    console.log(`スワイプポイント - x: ${x}, y: ${y}`);
+    
+    // 閾値 - 最小移動距離
+    const minDistance = 50; // 閾値を少し大きくする
+    const distance = Math.sqrt(x * x + y * y);
+    
+    // 最低限の動きがあるかチェック
+    if (distance < minDistance) {
+      console.log(`最小距離(${minDistance}px)未満のスワイプ: ${distance}px - スキップ`);
+      return null;
+    }
+    
+    // X軸とY軸のどちらの移動が大きいかで方向を決定
+    const absX = Math.abs(x);
+    const absY = Math.abs(y);
+    
+    if (absX > absY) {
+      // X軸の移動が大きい場合は左右
+      return x > 0 ? 'right' : 'left';
+    } else {
+      // Y軸の移動が大きい場合は上下
+      return y > 0 ? 'down' : 'up';
+    }
+  };
+  
   // スワイプ処理のラッパー関数（結果表示のアニメーション用）
   const handleSwipeWithAnimation = (direction: 'up' | 'down' | 'left' | 'right') => {
-    if (!currentGame || currentCarIndex >= cars.length || !gameReady) return;
+    if (!currentGame || currentCarIndex >= cars.length || !gameReady || animating) return;
+    
+    // アニメーション中フラグを設定
+    setAnimating(true);
     
     const currentCar = cars[currentCarIndex];
     const expectedCategory = currentGame.directionMap[direction];
@@ -119,20 +186,68 @@ const GamePlayPage: React.FC = () => {
     // スワイプ結果を表示
     setLastResult(isCorrect ? 'correct' : 'incorrect');
     
-    // ゲームロジックのスワイプ処理を呼び出し
-    handleSwipe(direction);
+    // スワイプ状態をリセット
+    setSwiping(false);
     
-    // 一定時間後にアニメーション状態をリセット
+    // スワイプ軌跡をリセット
+    swipeTrailRef.current = [];
+    
+    // アニメーション時間経過後に次のカードへ進む（300ms）
     setTimeout(() => {
-      setLastResult(null);
-      setSwipeDirection(null);
-    }, 500);
+      // ゲームロジックのスワイプ処理を呼び出し（次のカードに進む）
+      handleSwipe(direction);
+      
+      // 100ms遅延させてアニメーション状態をリセット
+      setTimeout(() => {
+        setLastResult(null);
+        setSwipeDirection(null);
+        setSwipeDelta({ x: 0, y: 0 });
+        setAnimating(false);
+        
+        // cardRenderKeyを更新して強制的に再レンダリング
+        setCardRenderKey(prev => prev + 1);
+      }, 100);
+    }, 300);
+  };
+  
+  // スワイプ完了イベントをカスタムハンドラで処理
+  const handleSwipeEnd = (e: any) => {
+    if (!gameReady || animating) return;
+    
+    // スワイプの軌跡から方向を判定
+    const direction = calculateSwipeDirection(swipeTrailRef.current);
+    
+    if (direction) {
+      handleSwipeWithAnimation(direction);
+    } else {
+      // 有効なスワイプでない場合はリセット
+      setSwiping(false);
+      setSwipeDelta({ x: 0, y: 0 });
+    }
+    
+    // スワイプ軌跡をリセット
+    swipeTrailRef.current = [];
+  };
+  
+  // タッチ終了時にスワイプ完了イベントを発火
+  const handleTouchEnd = () => {
+    if (swiping && !animating) {
+      handleSwipeEnd({});
+    }
   };
   
   // ゲーム退出処理
   const handleQuitGame = () => {
     leaveGame();
     navigate('/modes');
+  };
+  
+  // 現在のスワイプ方向をハイライト表示するためのヘルパー関数
+  const isDirectionActive = (direction: 'up' | 'down' | 'left' | 'right'): boolean => {
+    if (!swiping) return false;
+    
+    const calculatedDirection = calculateSwipeDirection(swipeTrailRef.current);
+    return calculatedDirection === direction;
   };
   
   // ゲーム画面が初期化されていない場合
@@ -219,7 +334,7 @@ const GamePlayPage: React.FC = () => {
       
       {/* メインのゲーム画面 */}
       <Box 
-        {...(gameReady ? swipeHandlers : {})}
+        {...(gameReady && !animating ? swipeHandlers : {})}
         h="calc(100vh - 150px)"
         position="relative"
         overflow="hidden"
@@ -229,29 +344,8 @@ const GamePlayPage: React.FC = () => {
         justifyContent="space-between"
         alignItems="center"
         px={2}
-        onClick={(e) => {
-          // カスタムイベントハンドラを追加し、react-swipeableが処理できるようにする
-          if (!gameReady) return;
-          
-          // カードがスワイプされたら対応する方向に応じてhandleSwipeWithAnimationを呼び出す
-          const swipeHandlerMap = {
-            'onSwipedUp': () => handleSwipeWithAnimation('up'),
-            'onSwipedRight': () => handleSwipeWithAnimation('right'),
-            'onSwipedDown': () => handleSwipeWithAnimation('down'),
-            'onSwipedLeft': () => handleSwipeWithAnimation('left')
-          };
-          
-          // react-swipeableのイベントと連携
-          Object.entries(swipeHandlers).forEach(([key, handler]) => {
-            if (typeof handler === 'function' && key in swipeHandlerMap) {
-              // @ts-ignore
-              const swipeAction = swipeHandlerMap[key];
-              // 通常のスワイプハンドラに加えて、アニメーション処理を行う
-              handler(e);
-              swipeAction();
-            }
-          });
-        }}
+        onTouchEnd={gameReady && !animating ? handleTouchEnd : undefined}
+        onMouseUp={gameReady && !animating ? handleTouchEnd : undefined}
       >
         {!gameReady ? (
           /* カウントダウン中は車の画像を表示せず、カウントダウンのみを表示する */
@@ -299,11 +393,21 @@ const GamePlayPage: React.FC = () => {
           </Flex>
         ) : (
           /* カウントダウン終了後のみ車の画像を表示 */
-          <Box display="flex" justifyContent="center" alignItems="center" flex="1">
+          <Box 
+            display="flex" 
+            justifyContent="center" 
+            alignItems="center" 
+            flex="1"
+            w="100%"
+            cursor={swiping ? "grabbing" : "grab"}
+            key={`car-container-${currentCarIndex}-${cardRenderKey}`} // 複合キーを追加
+          >
             <SwipableCarImage 
               car={currentCar} 
               lastResult={lastResult} 
               swipeDirection={swipeDirection}
+              swiping={swiping}
+              swipeDelta={swipeDelta}
             />
           </Box>
         )}
@@ -327,6 +431,8 @@ const GamePlayPage: React.FC = () => {
               outline: "none !important"
             }
           }}
+          position="relative"
+          zIndex={5}
         >
           {/* 上方向 */}
           <Box mb={1}>
@@ -337,7 +443,7 @@ const GamePlayPage: React.FC = () => {
                   key={direction}
                   direction={direction as 'up' | 'down' | 'left' | 'right'}
                   category={category}
-                  isActive={false}
+                  isActive={isDirectionActive('up')}
                 />
               ))}
           </Box>
@@ -352,7 +458,7 @@ const GamePlayPage: React.FC = () => {
                     key={direction}
                     direction={direction as 'up' | 'down' | 'left' | 'right'}
                     category={category}
-                    isActive={false}
+                    isActive={isDirectionActive('left')}
                   />
                 ))}
             </Box>
@@ -365,7 +471,7 @@ const GamePlayPage: React.FC = () => {
                     key={direction}
                     direction={direction as 'up' | 'down' | 'left' | 'right'}
                     category={category}
-                    isActive={false}
+                    isActive={isDirectionActive('right')}
                   />
                 ))}
             </Box>
@@ -380,7 +486,7 @@ const GamePlayPage: React.FC = () => {
                   key={direction}
                   direction={direction as 'up' | 'down' | 'left' | 'right'}
                   category={category}
-                  isActive={false}
+                  isActive={isDirectionActive('down')}
                 />
               ))}
           </Box>
