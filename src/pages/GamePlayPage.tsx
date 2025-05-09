@@ -16,6 +16,7 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { FaClock } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion'; // framer-motionをインポート
 import { useGame } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSwipe, SwipeDirection } from '../hooks/useSwipe';
@@ -70,7 +71,7 @@ const GamePlayPage: React.FC = () => {
   const [cardRenderKey, setCardRenderKey] = useState<number>(0);
   
   // 画像上にカーソルやタッチがあるかをチェックする関数
-  const isPointInsideCard = useCallback((e: React.TouchEvent | React.MouseEvent): boolean => {
+  const isPointInsideCarContainer = useCallback((e: React.TouchEvent | React.MouseEvent): boolean => {
     if (!cardRef.current) return false;
     
     const cardRect = cardRef.current.getBoundingClientRect();
@@ -90,13 +91,16 @@ const GamePlayPage: React.FC = () => {
       clientY = e.clientY;
     }
     
-    // 位置が画像の範囲内か判定
-    return (
+    // 位置が画像コンテナの範囲内か判定
+    const isInside = (
       clientX >= cardRect.left &&
       clientX <= cardRect.right &&
       clientY >= cardRect.top &&
       clientY <= cardRect.bottom
     );
+    
+    console.log('ポイント判定', { isInside, x: clientX, y: clientY, rect: cardRect });
+    return isInside;
   }, []);
   
   // スワイプ処理のラッパー関数（結果表示のアニメーション用）
@@ -183,36 +187,44 @@ const GamePlayPage: React.FC = () => {
     50 // スワイプと判定する閾値
   );
   
-  // スワイプイベントをフィルタリングするラッパー
+  // framer-motionではドラッグイベントを内部的に処理するため、
+  // タッチイベントのリスナーはほとんど必要ないが、バックアップとして残す
   const filteredDragHandlers = {
     onTouchStart: (e: React.TouchEvent) => {
-      if (isPointInsideCard(e) && gameReady && !animating) {
-        dragHandlers.onTouchStart(e);
+      // ゲームの準備ができている場合にのみ処理
+      if (gameReady && !animating) {
+        // framer-motionでドラッグ処理が主導されるため、単純なログのみ
+        console.log('タッチイベント検出');
       }
     },
     onTouchMove: (e: React.TouchEvent) => {
-      if (swiping && gameReady && !animating) {
-        dragHandlers.onTouchMove(e);
+      // 必要に応じてデバッグ情報のみ
+      if (gameReady && !animating && swiping) {
+        console.log('タッチ移動イベント');
       }
     },
     onTouchEnd: (e: React.TouchEvent) => {
+      // 必要に応じてデバッグ情報のみ
       if (gameReady && !animating) {
-        dragHandlers.onTouchEnd(e);
+        console.log('タッチ終了イベント');
       }
     },
     onMouseDown: (e: React.MouseEvent) => {
-      if (isPointInsideCard(e) && gameReady && !animating) {
-        dragHandlers.onMouseDown(e);
+      // 必要に応じてデバッグ情報のみ
+      if (gameReady && !animating) {
+        console.log('マウスダウンイベント');
       }
     },
     onMouseMove: (e: React.MouseEvent) => {
+      // 必要に応じてデバッグ情報のみ
       if (swiping && gameReady && !animating) {
-        dragHandlers.onMouseMove(e);
+        console.log('マウス移動イベント');
       }
     },
     onMouseUp: (e: React.MouseEvent) => {
+      // 必要に応じてデバッグ情報のみ
       if (gameReady && !animating) {
-        dragHandlers.onMouseUp(e);
+        console.log('マウスアップイベント');
       }
     }
   };
@@ -364,85 +376,123 @@ const GamePlayPage: React.FC = () => {
       <Box 
         h="calc(100vh - 150px)"
         position="relative"
-        overflow="hidden"
+        overflow="visible" // overflow: visibleに変更して、スワイプアニメーションがはみ出すのを許可
         bg="gray.50"
         display="flex"
         flexDirection="column"
         justifyContent="space-between"
         alignItems="center"
         px={2}
+        // framer-motionで直接ドラッグ処理をするため、タッチイベントはほぼ不要
         onTouchStart={filteredDragHandlers.onTouchStart}
         onTouchMove={filteredDragHandlers.onTouchMove}
         onTouchEnd={filteredDragHandlers.onTouchEnd}
         onMouseDown={filteredDragHandlers.onMouseDown}
         onMouseMove={filteredDragHandlers.onMouseMove}
         onMouseUp={filteredDragHandlers.onMouseUp}
+        sx={{
+          touchAction: "none", // より強力なタッチイベント制御のため、すべてのデフォルトタッチアクションを無効化
+          WebkitTapHighlightColor: "rgba(0,0,0,0)", // タップのハイライトを無効化
+          WebkitTouchCallout: "none", // タッチメニューを無効化
+          WebkitUserSelect: "none", // テキスト選択を無効化
+          userSelect: "none", // テキスト選択を無効化（すべてのブラウザ）
+          cursor: swiping ? "grabbing" : "default", // スワイプ中はグラブカーソルを表示
+          "& .car-container-swipeable, & .car-image-swipeable": {
+            touchAction: "none", // 車の画像コンテナと画像自体では完全にブラウザのタッチ動作を無効化
+            userSelect: "none",
+            WebkitUserSelect: "none",
+            // WebKitベンダープロパティはChakra UIのsxプロパティ内では問題なく使用できる
+            WebkitTouchCallout: "none", // タッチコールアウトを無効化
+            "-webkit-tap-highlight-color": "rgba(0,0,0,0)" // タップハイライトを無効化
+          }
+        }}
       >
-        {!gameReady ? (
-          /* カウントダウン中は車の画像を表示せず、カウントダウンのみを表示する */
-          <Flex
-            position="absolute"
-            top="0"
-            left="0"
-            right="0"
-            bottom="0"
-            bg="black" /* 完全に不透明な黒色背景 */
-            zIndex="10"
-            justifyContent="center"
-            alignItems="center"
-            flexDirection="column"
-          >
-            <Text
-              fontSize="8xl"
-              fontWeight="extrabold"
-              color="white"
-              textShadow="0 0 20px rgba(255, 255, 255, 0.7)"
-              animation="pulse 1s infinite"
-              transform="scale(1.5)"
-              mb={5}
+        <AnimatePresence>
+          {!gameReady ? (
+            /* カウントダウン中は車の画像を表示せず、カウントダウンのみを表示する */
+            <motion.div
+              key="countdown"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 10,
+                background: 'black',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%',
+                height: '100%'
+              }}
             >
-              {countdown}
-            </Text>
-            <Text
-              fontSize="3xl"
-              fontWeight="bold"
-              color="white"
-              mt={4}
-              animation="fadeIn 1s ease-in-out"
-              textShadow="0 0 10px rgba(255, 255, 255, 0.5)"
+              <Text
+                fontSize="8xl"
+                fontWeight="extrabold"
+                color="white"
+                textShadow="0 0 20px rgba(255, 255, 255, 0.7)"
+                animation="pulse 1s infinite"
+                transform="scale(1.5)"
+                mb={5}
+              >
+                {countdown}
+              </Text>
+              <Text
+                fontSize="3xl"
+                fontWeight="bold"
+                color="white"
+                mt={4}
+                animation="fadeIn 1s ease-in-out"
+                textShadow="0 0 10px rgba(255, 255, 255, 0.5)"
+              >
+                準備をしてください！
+              </Text>
+              <Text
+                fontSize="xl"
+                color="gray.300"
+                mt={8}
+                animation="bounce 2s infinite"
+              >
+                スワイプの準備をしよう
+              </Text>
+            </motion.div>
+          ) : (
+            /* カウントダウン終了後のみ車の画像を表示 */
+            <motion.div
+              key={`car-container-${currentCarIndex}-${cardRenderKey}`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                flex: 1,
+                width: '100%',
+                cursor: swiping ? "grabbing" : "grab",
+                position: 'relative'
+              }}
+              ref={cardRef}
             >
-              準備をしてください！
-            </Text>
-            <Text
-              fontSize="xl"
-              color="gray.300"
-              mt={8}
-              animation="bounce 2s infinite"
-            >
-              スワイプの準備をしよう
-            </Text>
-          </Flex>
-        ) : (
-          /* カウントダウン終了後のみ車の画像を表示 */
-          <Box 
-            display="flex" 
-            justifyContent="center" 
-            alignItems="center" 
-            flex="1"
-            w="100%"
-            cursor={swiping ? "grabbing" : "grab"}
-            key={`car-container-${currentCarIndex}-${cardRenderKey}`} // 複合キーを追加
-            ref={cardRef} // 画像コンテナへの参照を追加
-          >
-            <SwipableCarImage 
-              car={currentCar} 
-              lastResult={lastResult} 
-              swipeDirection={swipeDirection}
-              swiping={swiping}
-              swipeDelta={swipeDelta}
-            />
-          </Box>
-        )}
+              <SwipableCarImage 
+                car={currentCar} 
+                lastResult={lastResult} 
+                swipeDirection={swipeDirection}
+                swiping={swiping}
+                swipeDelta={swipeDelta}
+                onSwipeStart={handleDragStart}
+                onSwiping={handleDragging}
+                onSwiped={handleDragEnd}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         {/* 方向インジケーター (十字キー形式に配置) - 常に表示 */}
         <Box

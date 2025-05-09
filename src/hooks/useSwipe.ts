@@ -72,8 +72,14 @@ export const useSwipe = (
 
   // タッチ/ドラッグ開始時のハンドラ
   const handleStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    // 注意: preventDefault() は パッシブイベントリスナーでは動作しないため、
+    // この機能は CSS の touch-action: none に依存します
+    
     const pos = getClientPosition(e);
     if (!pos) return;
+    
+    // デバッグログ
+    console.log('ドラッグ開始イベント検出', { x: pos.x, y: pos.y });
     
     startPos.current = pos;
     isDragging.current = true;
@@ -86,6 +92,7 @@ export const useSwipe = (
   
   // タッチ/ドラッグ移動時のハンドラ
   const handleMove = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    // ドラッグ中でない場合、または開始位置が設定されていない場合は何もしない
     if (!isDragging.current || !startPos.current) return;
     
     const pos = getClientPosition(e);
@@ -94,8 +101,10 @@ export const useSwipe = (
     const deltaX = pos.x - startPos.current.x;
     const deltaY = pos.y - startPos.current.y;
     
+    // 現在の変位を更新
     currentDelta.current = { x: deltaX, y: deltaY };
     
+    // コールバックがあれば呼び出す
     if (onDragging) {
       onDragging(deltaX, deltaY);
     }
