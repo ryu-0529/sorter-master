@@ -144,27 +144,20 @@ const GamePlayPage: React.FC = () => {
     // デバッグ情報
     console.log(`スワイプポイント - x: ${x}, y: ${y}`);
     
-    // 閾値 - 最小移動距離
-    const minDistance = 50; // 閾値を少し大きくする
-    const distance = Math.sqrt(x * x + y * y);
+    // 境界線を越えるための閾値
+    const boundaryThreshold = 100; // 100pxの範囲を超えた場合に方向が確定
     
-    // 最低限の動きがあるかチェック
-    if (distance < minDistance) {
-      console.log(`最小距離(${minDistance}px)未満のスワイプ: ${distance}px - スキップ`);
-      return null;
-    }
-    
-    // X軸とY軸のどちらの移動が大きいかで方向を決定
-    const absX = Math.abs(x);
-    const absY = Math.abs(y);
-    
-    if (absX > absY) {
-      // X軸の移動が大きい場合は左右
+    // 境界線を越えているか判定
+    if (Math.abs(x) > boundaryThreshold) {
+      // X軸方向の境界線を越えている
       return x > 0 ? 'right' : 'left';
-    } else {
-      // Y軸の移動が大きい場合は上下
+    } else if (Math.abs(y) > boundaryThreshold) {
+      // Y軸方向の境界線を越えている
       return y > 0 ? 'down' : 'up';
     }
+    
+    // 境界線を越えていない場合はnullを返す
+    return null;
   };
   
   // スワイプ処理のラッパー関数（結果表示のアニメーション用）
@@ -180,34 +173,41 @@ const GamePlayPage: React.FC = () => {
     // 画像のカテゴリと一致するかチェック
     const isCorrect = currentCar.category === expectedCategory;
     
-    // スワイプ方向を設定してアニメーションを開始
+    // スワイプ方向を設定
     setSwipeDirection(direction);
     
     // スワイプ結果を表示
     setLastResult(isCorrect ? 'correct' : 'incorrect');
     
-    // スワイプ状態をリセット
+    // スワイプ状態をリセット - 判定後即座に初期位置に戻す
     setSwiping(false);
+    setSwipeDelta({ x: 0, y: 0 });
     
     // スワイプ軌跡をリセット
     swipeTrailRef.current = [];
     
-    // アニメーション時間経過後に次のカードへ進む（300ms）
+    // 結果表示を見せてから次のカードに進む
     setTimeout(() => {
+      // 次のカードに進む前に明示的に初期位置に戻す
+      setSwipeDelta({ x: 0, y: 0 });
+      
       // ゲームロジックのスワイプ処理を呼び出し（次のカードに進む）
       handleSwipe(direction);
       
-      // 100ms遅延させてアニメーション状態をリセット
+      // 次のカードを表示する前に必ずアニメーション状態をリセット
       setTimeout(() => {
+        // もう一度位置を確実にリセット
+        setSwipeDelta({ x: 0, y: 0 });
+        
+        // 結果表示を消去
         setLastResult(null);
         setSwipeDirection(null);
-        setSwipeDelta({ x: 0, y: 0 });
         setAnimating(false);
         
         // cardRenderKeyを更新して強制的に再レンダリング
         setCardRenderKey(prev => prev + 1);
-      }, 100);
-    }, 300);
+      }, 300);
+    }, 800);
   };
   
   // スワイプ完了イベントをカスタムハンドラで処理

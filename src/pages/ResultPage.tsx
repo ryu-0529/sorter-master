@@ -148,11 +148,20 @@ const ResultPage: React.FC = () => {
                 </Text>
               </Box>
               
-              {getMyRanking() > 0 && (
+              {getMyRanking() > 0 && !currentUser?.isAnonymous && (
                 <Box textAlign="center" p={4}>
                   <Text fontSize="sm" color="gray.500">ランキング</Text>
                   <Text fontSize="4xl" fontWeight="bold" color="orange.500">
                     {getMyRanking()}位
+                  </Text>
+                </Box>
+              )}
+              
+              {currentUser?.isAnonymous && (
+                <Box textAlign="center" p={4}>
+                  <Text fontSize="sm" color="gray.500">ゲストプレイ</Text>
+                  <Text fontSize="md" fontWeight="normal" color="gray.500">
+                    登録ユーザーになるとランキングに参加できます
                   </Text>
                 </Box>
               )}
@@ -177,7 +186,7 @@ const ResultPage: React.FC = () => {
           </VStack>
         </Box>
         
-        {/* ランキング */}
+        {/* ランキング - ゲストユーザーでない場合のみ表示 */}
         <Box 
           p={6} 
           bg={bgColor} 
@@ -190,7 +199,18 @@ const ResultPage: React.FC = () => {
             <Heading as="h2" size="md" display="flex" alignItems="center">
               <Icon as={FaTrophy} color="yellow.400" mr={2} />
               ランキング
+              {currentUser?.isAnonymous && (
+                <Badge ml={2} colorScheme="gray">閲覧のみ</Badge>
+              )}
             </Heading>
+            
+            {currentUser?.isAnonymous && (
+              <Box p={2} bg="gray.50" borderRadius="md">
+                <Text fontSize="sm" color="gray.600">
+                  ゲストモードではランキングに登録されません。ユーザー登録するとランキングに参加できます。
+                </Text>
+              </Box>
+            )}
             
             <Box overflowX="auto">
               <Table variant="simple" size="sm">
@@ -207,7 +227,7 @@ const ResultPage: React.FC = () => {
                   {rankings.slice(0, 10).map((entry, index) => (
                     <Tr 
                       key={entry.id}
-                      bg={currentUser && entry.userId === currentUser.uid ? 'blue.50' : undefined}
+                      bg={currentUser && !currentUser.isAnonymous && entry.userId === currentUser.uid ? 'blue.50' : undefined}
                     >
                       <Td>
                         <Flex alignItems="center" justifyContent="center">
@@ -215,9 +235,9 @@ const ResultPage: React.FC = () => {
                         </Flex>
                       </Td>
                       <Td>
-                        <Text fontWeight={currentUser && entry.userId === currentUser.uid ? 'bold' : 'normal'}>
+                        <Text fontWeight={currentUser && !currentUser.isAnonymous && entry.userId === currentUser.uid ? 'bold' : 'normal'}>
                           {entry.displayName}
-                          {currentUser && entry.userId === currentUser.uid && (
+                          {currentUser && !currentUser.isAnonymous && entry.userId === currentUser.uid && (
                             <Badge ml={2} colorScheme="blue">あなた</Badge>
                           )}
                         </Text>

@@ -48,9 +48,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
 
   // Firebaseユーザーオブジェクトから独自のユーザーオブジェクトを作成する
-  const createUserObject = (firebaseUser: FirebaseUser | null): User | null => {
+  const createUserObject = async (firebaseUser: FirebaseUser | null): Promise<User | null> => {
     if (!firebaseUser) return null;
+    
+    // Firestoreからユーザー情報を取得して、displayNameをFirestoreの値で上書き
+    try {
+      const userRef = doc(firestore, 'users', firebaseUser.uid);
+      const userSnapshot = await getDoc(userRef);
+      
+      if (userSnapshot.exists() && userSnapshot.data().displayName) {
+        return {
+          uid: firebaseUser.uid,
+          displayName: userSnapshot.data().displayName,
+          email: firebaseUser.email,
+          isAnonymous: firebaseUser.isAnonymous,
+          photoURL: firebaseUser.photoURL
+        };
+      }
+    } catch (err) {
+      console.error("Firestoreからのユーザー取得エラー:", err);
+    }
 
+    // Firestoreから取得できなかった場合はFirebase Authの値を使用
     return {
       uid: firebaseUser.uid,
       displayName: firebaseUser.displayName,
@@ -81,7 +100,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setError(null);
       const result = await signInAnonymously(auth);
-      const user = createUserObject(result.user);
+      const user = await createUserObject(result.user);
       if (user) {
         await saveUserToFirestore(user);
       }
@@ -107,7 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setError(null);
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      const user = createUserObject(result.user);
+      const user = await createUserObject(result.user);
       if (user) {
         user.displayName = displayName;
         await saveUserToFirestore(user);
@@ -124,7 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      const user = createUserObject(result.user);
+      const user = await createUserObject(result.user);
       if (user) {
         await saveUserToFirestore(user);
       }
@@ -186,7 +205,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // 認証状態の監視
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      const user = createUserObject(firebaseUser);
+      const user = await createUserObject(firebaseUser);
       if (user) {
         await saveUserToFirestore(user);
       }

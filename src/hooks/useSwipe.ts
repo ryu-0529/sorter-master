@@ -23,6 +23,11 @@ export const useSwipe = (onSwiping?: (deltaX: number, deltaY: number) => void): 
         onSwiping(event.deltaX, event.deltaY);
       }
     },
+    // スワイプ終了時、位置をリセットするために空の関数を設定
+    onSwiped: () => {
+      // スワイプ終了時の処理は GamePlayPage の handleSwipeEnd で行う
+      // ここでは何もしない
+    },
     // カスタムイベントを有効にする
     trackMouse: true, // マウスでもスワイプを検出
     trackTouch: true, // タッチでもスワイプを検出

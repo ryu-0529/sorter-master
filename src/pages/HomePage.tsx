@@ -61,10 +61,10 @@ const HomePage: React.FC = () => {
         >
           <VStack spacing={6} align="center">
             <Image 
-              src="/images/logo.png" 
-              alt="仕分け職人ロゴ" 
+              src="/images/shash.svg" 
+              alt="車種振り分けゲームのロゴ" 
               boxSize="200px"
-              fallbackSrc="https://via.placeholder.com/200?text=仕分け職人"
+              fallbackSrc="https://via.placeholder.com/200?text=車種振り分けゲーム"
             />
             
             <Text fontSize="xl" textAlign="center">
@@ -81,9 +81,6 @@ const HomePage: React.FC = () => {
               車種振り分けゲーム
             </Button>
             
-            <Text color="gray.500" fontSize="sm">
-              ※他のゲームモードは準備中です
-            </Text>
           </VStack>
         </Box>
         

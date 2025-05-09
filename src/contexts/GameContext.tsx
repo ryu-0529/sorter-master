@@ -539,6 +539,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const submitScore = async (result: GameResult) => {
     if (!currentUser) return;
     
+    // ゲストユーザー（匿名認証）の場合はランキングに登録しない
+    if (currentUser.isAnonymous) {
+      console.log('ゲストユーザーはランキングに登録されません');
+      await fetchRankings(); // ランキングは更新する
+      return;
+    }
+    
     const rankingEntry: RankingEntry = {
       id: uuidv4(),
       userId: currentUser.uid,

@@ -37,6 +37,10 @@ const SwipableCarImage: React.FC<SwipableCarImageProps> = ({
       }
       setPreviousCar(car);
       setCarKey(car.id);
+      
+      // 新しい車に切り替わった時点で位置を確実に中央に戻す
+      // この処理が重要です
+      setAnimatingOut(false);
     }
   }, [car, previousCar]);
   
@@ -65,41 +69,16 @@ const SwipableCarImage: React.FC<SwipableCarImageProps> = ({
       };
     }
     
-    // スワイプ完了時のアニメーション（画面外へ）
-    if (swipeDirection && animatingOut) {
-      let transform = '';
-      let transition = 'transform 0.3s ease-out';
-      
-      switch(swipeDirection) {
-        case 'up':
-          transform = 'translateY(-120%)';
-          break;
-        case 'down':
-          transform = 'translateY(120%)';
-          break;
-        case 'left':
-          transform = 'translateX(-120%)';
-          break;
-        case 'right':
-          transform = 'translateX(120%)';
-          break;
-        default:
-          transform = 'none';
-      }
-      
-      return { transform, transition };
-    }
-    
     // スワイプ中のドラッグ効果
     if (swiping) {
       const transform = `translate(${swipeDelta.x}px, ${swipeDelta.y}px)`;
       return { transform, transition: 'none' }; // トランジションなし（リアルタイム反映）
     }
     
-    // 通常状態
+    // スワイプ完了時、判定後は初期位置に戻す
     return { 
       transform: 'none', 
-      transition: 'transform 0.2s ease-out' 
+      transition: 'transform 0.3s ease-out' // 滑らかに初期位置に戻す
     };
   };
   
@@ -168,7 +147,7 @@ const SwipableCarImage: React.FC<SwipableCarImageProps> = ({
         zIndex={2}
         position="relative"
         opacity={animatingOut ? 0.8 : 1}
-        key={carKey} // キーを追加して再レンダリングを制御
+        key={`${carKey}-${swiping ? 'swiping' : 'static'}`} // スワイプ状態変更時にも再レンダリング
       />
       
       {/* スワイプ結果の表示 */}
