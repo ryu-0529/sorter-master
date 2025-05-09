@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Box, Flex, Icon, Text } from '@chakra-ui/react';
 import { FaCheck, FaTimes } from 'react-icons/fa';
 import { Car } from '../types';
+import { SwipeDirection } from '../hooks/useSwipe';
 
 interface SwipableCarImageProps {
   car: Car | null;
   lastResult: 'correct' | 'incorrect' | null;
-  swipeDirection: 'up' | 'down' | 'left' | 'right' | null;
+  swipeDirection: SwipeDirection;
   swiping: boolean;
   swipeDelta: { x: number; y: number };
 }

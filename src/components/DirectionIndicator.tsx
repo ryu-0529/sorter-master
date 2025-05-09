@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text } from '@chakra-ui/react';
 import { CarCategory } from '../types';
 
+// 方向インジケーターのコンポーネント - スワイプの方向を視覚的に表示
 interface DirectionIndicatorProps {
   direction: 'up' | 'down' | 'left' | 'right';
   category: CarCategory;
@@ -32,8 +33,8 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
       m={1}
       position="relative"
       borderWidth="2px"
-      borderColor="blue.400"
-      borderStyle="dashed"
+      borderColor="black"
+      borderStyle="solid"
       sx={{
         WebkitTapHighlightColor: "transparent",
         "-webkit-tap-highlight-color": "rgba(0,0,0,0)",
@@ -49,8 +50,8 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
         width: direction === 'up' || direction === 'down' ? "150px" : "100px",
         height: direction === 'left' || direction === 'right' ? "75px" : "100px",
         borderWidth: "0px",
-        borderColor: "red.200",
-        borderStyle: "dashed",
+        borderColor: "black",
+        borderStyle: "solid",
         borderTopWidth: direction === 'up' ? "2px" : "0px",
         borderBottomWidth: direction === 'down' ? "2px" : "0px",
         borderLeftWidth: direction === 'left' ? "2px" : "0px",
