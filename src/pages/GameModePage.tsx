@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Button, 
@@ -16,11 +16,21 @@ import { useNavigate } from 'react-router-dom';
 import { FaTrophy, FaUsers, FaInfoCircle, FaArrowLeft } from 'react-icons/fa';
 import { useGame } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
+import TutorialOverlay from '../components/TutorialOverlay';
 
 const GameModePage: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  const { startSinglePlayerGame, joinMultiplayerGame, createMultiplayerGame } = useGame();
+  const { 
+    startSinglePlayerGame, 
+    joinMultiplayerGame, 
+    createMultiplayerGame,
+    startTutorial,
+    closeTutorial,
+    finishTutorial,
+    isTutorialOpen,
+    startInteractiveTutorial
+  } = useGame();
   const { currentUser } = useAuth();
   
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -78,15 +88,11 @@ const GameModePage: React.FC = () => {
     }
   };
   
-  // チュートリアル画面へ
+  // チュートリアル画面を開く
   const handleStartTutorial = () => {
-    toast({
-      title: '準備中',
-      description: 'チュートリアルは現在準備中です',
-      status: 'info',
-      duration: 3000,
-      isClosable: true,
-    });
+    // インタラクティブなチュートリアルを開始し、ゲームプレイ画面に遷移
+    startInteractiveTutorial();
+    navigate('/play');
   };
   
   // ホーム画面へ戻る
@@ -96,6 +102,13 @@ const GameModePage: React.FC = () => {
   
   return (
     <Container maxW="container.xl" py={8}>
+      {/* チュートリアルオーバーレイ */}
+      <TutorialOverlay 
+        isOpen={isTutorialOpen} 
+        onClose={closeTutorial} 
+        onFinish={finishTutorial} 
+      />
+      
       <VStack spacing={8} align="stretch">
         {/* ヘッダー */}
         <Flex justifyContent="space-between" alignItems="center">

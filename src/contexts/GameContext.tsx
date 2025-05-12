@@ -49,6 +49,12 @@ interface GameContextProps {
   gameResult: GameResult | null;
   rankings: RankingEntry[];
   
+  // チュートリアル状態
+  isTutorialMode: boolean;
+  isTutorialOpen: boolean;
+  tutorialStep: number;
+  tutorialCards: Car[];
+  
   // ゲーム管理関数
   startSinglePlayerGame: () => void;
   joinMultiplayerGame: () => Promise<void>;
@@ -57,6 +63,13 @@ interface GameContextProps {
   handleSwipe: (direction: 'up' | 'down' | 'left' | 'right') => void;
   submitScore: (result: GameResult) => Promise<void>;
   fetchRankings: () => Promise<void>;
+  
+  // チュートリアル管理関数
+  startTutorial: () => void;
+  closeTutorial: () => void;
+  finishTutorial: () => void;
+  advanceTutorial: () => void;
+  startInteractiveTutorial: () => void;
 }
 
 const GameContext = createContext<GameContextProps | undefined>(undefined);
@@ -84,6 +97,12 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [isGameActive, setIsGameActive] = useState<boolean>(false);
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
+  
+  // チュートリアル状態
+  const [isTutorialMode, setIsTutorialMode] = useState<boolean>(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
+  const [tutorialStep, setTutorialStep] = useState<number>(0);
+  const [tutorialCards, setTutorialCards] = useState<Car[]>([]);
 
   // ランダムな方向とカテゴリのマッピングを作成
   const generateDirectionMap = (gameCars: Car[] = []): DirectionMap => {
@@ -605,6 +624,102 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     return () => unsubscribe();
   }, [currentUser, currentGame]);
 
+  // チュートリアル用のカードセットを準備する関数
+  const prepareTutorialCards = (): Car[] => {
+    // チュートリアル用に最初の数枚の車をコピー（シンプルなセットを使用）
+    return [
+      { id: 't1', imageUrl: '/images/cars/car1.png', category: 'クロスカントリー' },
+      { id: 't2', imageUrl: '/images/cars/car2.png', category: 'SUV' },
+      { id: 't3', imageUrl: '/images/cars/car3.png', category: '軽自動車' },
+      { id: 't4', imageUrl: '/images/cars/car4.png', category: 'ミニバン' },
+      { id: 't5', imageUrl: '/images/cars/car5.png', category: 'ワンボックス' }
+    ];
+  };
+  
+  // インタラクティブなチュートリアルを開始する関数
+  const startInteractiveTutorial = () => {
+    if (!currentUser) return;
+    
+    console.log('インタラクティブチュートリアルを開始します');
+    setIsTutorialMode(true);
+    
+    // チュートリアル用のカードを準備
+    const tutorialCards = prepareTutorialCards();
+    setTutorialCards(tutorialCards);
+    
+    // 最初のカードのカテゴリを必ず含むマッピングを作成（最初は固定の方向に設定）
+    const firstCard = tutorialCards[0];
+    const fixedDirectionMap: DirectionMap = {
+      up: 'クロスカントリー',  // 最初のカードのカテゴリは上方向に固定
+      right: 'SUV',
+      down: 'ミニバン',
+      left: 'ステーションワゴン'
+    };
+    
+    // チュートリアル用のゲームセッションを作成
+    const tutorialGame: GameSession = {
+      id: 'tutorial',
+      players: {
+        [currentUser.uid]: {
+          displayName: currentUser.displayName || `Guest-${currentUser.uid.substring(0, 5)}`,
+          score: 0,
+          progress: 0,
+          isComplete: false
+        }
+      },
+      directionMap: fixedDirectionMap,
+      cars: tutorialCards,
+      startTime: Date.now(),
+      isActive: true
+    };
+    
+    // ゲーム状態を設定
+    setCurrentGame(tutorialGame);
+    setCars(tutorialCards);
+    setCurrentCarIndex(0);
+    setScore(0);
+    setIsGameActive(true);
+    setGameResult(null);
+    setTutorialStep(0);
+  };
+  
+  // チュートリアルステップを進める関数
+  const advanceTutorial = () => {
+    const nextStep = tutorialStep + 1;
+    console.log(`チュートリアルステップを進めます: ${tutorialStep} -> ${nextStep}`);
+    setTutorialStep(nextStep);
+  };
+  
+  // （従来型の）チュートリアルを開始する関数
+  const startTutorial = () => {
+    console.log('チュートリアルモードを開始します');
+    setIsTutorialMode(true);
+    setIsTutorialOpen(true);
+  };
+  
+  // チュートリアルを閉じる関数
+  const closeTutorial = () => {
+    console.log('チュートリアルを閉じます');
+    setIsTutorialOpen(false);
+  };
+  
+  // チュートリアルを完了する関数
+  const finishTutorial = () => {
+    console.log('チュートリアルを完了します');
+    setIsTutorialOpen(false);
+    setIsTutorialMode(false);
+    setTutorialStep(0);
+    
+    // ゲーム状態もクリア
+    if (currentGame?.id === 'tutorial') {
+      setCurrentGame(null);
+      setCars([]);
+      setCurrentCarIndex(0);
+      setScore(0);
+      setIsGameActive(false);
+    }
+  };
+
   // 初期ランキング取得
   useEffect(() => {
     fetchRankings();
@@ -619,13 +734,27 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     gameResult,
     rankings,
     
+    // チュートリアル状態
+    isTutorialMode,
+    isTutorialOpen,
+    tutorialStep,
+    tutorialCards,
+    
+    // ゲーム管理関数
     startSinglePlayerGame,
     joinMultiplayerGame,
     createMultiplayerGame,
     leaveGame,
     handleSwipe,
     submitScore,
-    fetchRankings
+    fetchRankings,
+    
+    // チュートリアル管理関数
+    startTutorial,
+    closeTutorial,
+    finishTutorial,
+    advanceTutorial,
+    startInteractiveTutorial
   };
 
   return (

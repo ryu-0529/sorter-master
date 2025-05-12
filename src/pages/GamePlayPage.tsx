@@ -36,7 +36,10 @@ const GamePlayPage: React.FC = () => {
     gameResult,
     leaveGame,
     handleSwipe,
-    submitScore
+    submitScore,
+    isTutorialMode,
+    tutorialStep,
+    advanceTutorial
   } = useGame();
   const { currentUser } = useAuth();
   
@@ -278,6 +281,15 @@ const GamePlayPage: React.FC = () => {
     return () => clearInterval(timer);
   }, [isGameActive, currentGame, gameReady]);
   
+  // チュートリアルモードで5枚の仕分けが終わったら完了画面を表示
+  useEffect(() => {
+    if (isTutorialMode && currentCarIndex === 5 && tutorialStep !== 4) {
+      // 5枚の仕分けが終わったらチュートリアル完了とする
+      // advanceTutorialを呼び出してステップ4に進める
+      advanceTutorial();
+    }
+  }, [isTutorialMode, currentCarIndex, tutorialStep, advanceTutorial]);
+  
   // ゲーム退出処理
   const handleQuitGame = useCallback(() => {
     leaveGame();
@@ -289,6 +301,126 @@ const GamePlayPage: React.FC = () => {
     if (!swiping || !swipeDirection) return false;
     return swipeDirection === direction;
   }, [swiping, swipeDirection]);
+  
+  // チュートリアル完了画面表示用コンポーネント
+  const TutorialCompletionScreen = () => {
+    const { finishTutorial } = useGame();
+    const navigate = useNavigate();
+    
+    const handleCompletion = () => {
+      finishTutorial();
+      navigate('/modes');
+    };
+    
+    return (
+      <Box
+        position="absolute"
+        top="50%"
+        left="50%"
+        transform="translate(-50%, -50%)"
+        bg="rgba(0, 0, 0, 0.7)"
+        color="white"
+        p={5}
+        borderRadius="lg"
+        maxW="80%"
+        textAlign="center"
+        zIndex={1000}
+        boxShadow="lg"
+      >
+        <Heading size="md" mb={3} color="blue.300">
+          チュートリアル完了！
+        </Heading>
+        <Text mb={4}>これでチュートリアルは終了です。実際のゲームでは制限時間内にできるだけ多くの車を正しく分類しましょう。</Text>
+        <Button
+          colorScheme="blue"
+          onClick={handleCompletion}
+          mt={2}
+        >
+          完了
+        </Button>
+      </Box>
+    );
+  };
+  
+  // チュートリアルのステップに応じたガイダンスメッセージを取得する関数
+  const getTutorialMessage = () => {
+    if (!isTutorialMode) return null;
+    
+    switch (tutorialStep) {
+      case 0:
+        return {
+          title: 'まずは画面を見てみましょう',
+          content: '車の画像が中央に表示され、上下左右には車種カテゴリが表示されています。表示された車を適切なカテゴリにスワイプして分類しましょう。',
+          nextAction: '画面を確認したら次へ進みましょう',
+        };
+      case 1:
+        return {
+          title: 'カテゴリを確認しよう',
+          content: '画面の四方には車種カテゴリが表示されています。現在の車（クロスカントリー）の正しいカテゴリは「上」方向に表示されています。',
+          nextAction: '上方向にスワイプしてみましょう',
+        };
+      case 2:
+        return {
+          title: 'スワイプの方法',
+          content: '車の画像を指やマウスでドラッグして上下左右にスワイプします。正しいカテゴリ方向にスワイプすると得点が加算されます。',
+          nextAction: '次の車でもスワイプしてみましょう',
+        };
+      case 3:
+        return {
+          title: 'ゲームの進行',
+          content: '全ての車を分類するとゲームが終了します。できるだけ多くの車を正確に分類して高得点を目指しましょう！',
+          nextAction: 'チュートリアルはもうすぐ終了です',
+        };
+      case 4:
+        return {
+          title: 'チュートリアル完了！',
+          content: 'これでチュートリアルは終了です。実際のゲームでは制限時間内にできるだけ多くの車を正しく分類しましょう。',
+          nextAction: '「完了」を押すとチュートリアルを終了します',
+        };
+      default:
+        return null;
+    }
+  };
+  
+  // チュートリアルガイダンス表示用コンポーネント（初期段階のみ表示）
+  const TutorialGuidance = () => {
+    const tutorialMessage = {
+      title: 'チュートリアルを開始します',
+      content: '車の画像が中央に表示され、上下左右には車種カテゴリが表示されています。表示された車を適切なカテゴリにスワイプして分類してください。5枚分の仕分けが終わるとチュートリアルは完了です。',
+      nextAction: '画面を確認したら車の分類を始めましょう',
+    };
+    
+    const { advanceTutorial } = useGame();
+    
+    return (
+      <Box
+        position="absolute"
+        top="50%"
+        left="50%"
+        transform="translate(-50%, -50%)"
+        bg="rgba(0, 0, 0, 0.7)"
+        color="white"
+        p={5}
+        borderRadius="lg"
+        maxW="80%"
+        textAlign="center"
+        zIndex={1000}
+        boxShadow="lg"
+      >
+        <Heading size="md" mb={3} color="blue.300">
+          {tutorialMessage.title}
+        </Heading>
+        <Text mb={4}>{tutorialMessage.content}</Text>
+        <Button
+          colorScheme="blue"
+          onClick={() => advanceTutorial()}
+          mt={2}
+        >
+          開始
+        </Button>
+      </Box>
+    );
+  };
   
   // ゲーム画面が初期化されていない場合
   if (!currentGame || !isGameActive) {
@@ -311,9 +443,15 @@ const GamePlayPage: React.FC = () => {
   
   // マルチプレイヤーモードかどうか
   const isMultiplayer = currentGame.id !== undefined && Object.keys(currentGame.players).length > 1;
-  
+
   return (
     <Container maxW="container.xl" p={0} h="100vh" position="relative">
+      {/* チュートリアル開始ガイダンス - 初期段階でのみ表示 */}
+      {isTutorialMode && tutorialStep === 0 && <TutorialGuidance />}
+      
+      {/* チュートリアル完了画面 - 5枚分の仕分けが終わった場合のみ表示 */}
+      {isTutorialMode && tutorialStep === 4 && <TutorialCompletionScreen />}
+      
       {/* ゲーム情報ヘッダー */}
       <Box bg="gray.100" p={4} borderBottom="1px" borderColor={borderColor}>
         <Flex justifyContent="space-between" alignItems="center">
