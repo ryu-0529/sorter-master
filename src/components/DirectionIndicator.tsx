@@ -13,18 +13,8 @@ interface DirectionIndicatorProps {
 const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, category, isActive }) => {
   // 方向に応じた色を設定
   const getDirectionColor = () => {
-    switch (direction) {
-      case 'up':
-        return 'purple';
-      case 'down':
-        return 'blue';
-      case 'left':
-        return 'red';
-      case 'right':
-        return 'green';
-      default:
-        return 'gray';
-    }
+    // 高速道路標識風に全て緑ベースに統一
+    return 'green';
   };
   
   // 方向に応じたスタイルを設定
@@ -62,19 +52,19 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
   const boxVariants = {
     idle: { 
       scale: 1,
-      backgroundColor: `var(--chakra-colors-${directionColor}-100)`,
-      color: 'var(--chakra-colors-gray-600)',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+      backgroundColor: `var(--chakra-colors-green-600)`, // 高速道路の標識風の緑色
+      color: 'white', // 白いフォントに変更
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)' // より立体的な看板の影
     },
     active: { 
       scale: 1.05,
-      backgroundColor: `var(--chakra-colors-${directionColor}-500)`,
+      backgroundColor: `var(--chakra-colors-green-700)`, // アクティブ時はより濃い緑に
       color: 'white',
-      boxShadow: '0 10px 15px rgba(0, 0, 0, 0.15)'
+      boxShadow: '0 10px 15px rgba(0, 0, 0, 0.4)'
     },
     hover: { 
       scale: 1.02,
-      boxShadow: '0 6px 8px rgba(0, 0, 0, 0.12)'
+      boxShadow: '0 6px 10px rgba(0, 0, 0, 0.35)'
     }
   };
   
@@ -107,7 +97,7 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
       px={2}
       py={1}
       borderRadius="md"
-      fontWeight="bold"
+      fontWeight="extrabold" // より太いフォントに変更
       textAlign="center"
       width={directionStyle.width}
       height={directionStyle.height}
@@ -117,9 +107,9 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
       alignItems="center"
       m={1}
       position="relative"
-      borderWidth="0px"
-      borderColor="transparent"
-      borderStyle="none"
+      borderWidth="2px" // 境界線を追加
+      borderColor="white" // 白い境界線
+      borderStyle="solid"
       sx={{
         WebkitTapHighlightColor: "transparent",
         "-webkit-tap-highlight-color": "rgba(0,0,0,0)",

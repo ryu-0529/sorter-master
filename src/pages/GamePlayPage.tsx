@@ -377,7 +377,7 @@ const GamePlayPage: React.FC = () => {
         h="calc(100vh - 150px)"
         position="relative"
         overflow="visible" // overflow: visibleに変更して、スワイプアニメーションがはみ出すのを許可
-        bg="gray.50"
+        bg="gray.800" // アスファルト色を少し明るく調整
         display="flex"
         flexDirection="column"
         justifyContent="center" // 中央配置に変更
@@ -391,6 +391,50 @@ const GamePlayPage: React.FC = () => {
         onMouseMove={filteredDragHandlers.onMouseMove}
         onMouseUp={filteredDragHandlers.onMouseUp}
         sx={{
+          // 一本道の高速道路風の背景スタイル
+          position: 'relative',
+          // 背景に遠近感を出すためのグラデーション
+          backgroundImage: `
+            linear-gradient(to bottom, #888 0%, #555 100%),
+            linear-gradient(to right, transparent 48%, white 48%, white 52%, transparent 52%)
+          `,
+          backgroundSize: '100% 100%, 20px 100%',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat, repeat-y',
+          // 中央の白い点線
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: '50%',
+            height: '100%',
+            width: '12px',
+            transform: 'translateX(-50%)',
+            background: 'repeating-linear-gradient(to bottom, white, white 20px, transparent 20px, transparent 40px)',
+            opacity: 0.7,
+            zIndex: 1
+          },
+          // 道路のガードレール
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: `
+              linear-gradient(to bottom, transparent 10%, rgba(200, 200, 200, 0.7) 10%, rgba(200, 200, 200, 0.7) 12%, transparent 12%),
+              linear-gradient(to bottom, transparent 90%, rgba(200, 200, 200, 0.7) 90%, rgba(200, 200, 200, 0.7) 92%, transparent 92%)
+            `,
+            backgroundSize: '100% 100%',
+            pointerEvents: 'none',
+            zIndex: 2
+          },
+          // 遠近感を出すための擬似要素
+          '&:before, &:after': {
+            perspective: '1000px',
+            transformStyle: 'preserve-3d'
+          },
           touchAction: "none", // より強力なタッチイベント制御のため、すべてのデフォルトタッチアクションを無効化
           WebkitTapHighlightColor: "rgba(0,0,0,0)", // タップのハイライトを無効化
           WebkitTouchCallout: "none", // タッチメニューを無効化
