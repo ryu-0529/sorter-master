@@ -255,11 +255,9 @@ const SwipableCarImage: React.FC<SwipableCarImageProps> = ({
   // コンポーネントをメモ化してパフォーマンスを向上
   return (
     <Box
-      w="350px"
-      h="410px"
+      w="280px"
+      h="280px"
       position="relative"
-      mt={4}
-      mb={3}
       mx="auto"
       display="flex"
       justifyContent="center"

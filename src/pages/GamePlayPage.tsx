@@ -380,7 +380,7 @@ const GamePlayPage: React.FC = () => {
         bg="gray.50"
         display="flex"
         flexDirection="column"
-        justifyContent="space-between"
+        justifyContent="center" // 中央配置に変更
         alignItems="center"
         px={2}
         // framer-motionで直接ドラッグ処理をするため、タッチイベントはほぼ不要
@@ -462,117 +462,107 @@ const GamePlayPage: React.FC = () => {
               </Text>
             </motion.div>
           ) : (
-            /* カウントダウン終了後のみ車の画像を表示 */
-            <motion.div
-              key={`car-container-${currentCarIndex}-${cardRenderKey}`}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                flex: 1,
-                width: '100%',
-                cursor: swiping ? "grabbing" : "grab",
-                position: 'relative'
-              }}
-              ref={cardRef}
+            // 新しいレイアウト: 四隅に選択肢、中央に車種画像を配置
+            <Flex
+              direction="column"
+              alignItems="center"
+              justifyContent="space-between"
+              w="100%"
+              h="100%"
+              position="relative"
+              py={4}
+              px={2}
             >
-              <SwipableCarImage 
-                car={currentCar} 
-                lastResult={lastResult} 
-                swipeDirection={swipeDirection}
-                swiping={swiping}
-                swipeDelta={swipeDelta}
-                onSwipeStart={handleDragStart}
-                onSwiping={handleDragging}
-                onSwiped={handleDragEnd}
-              />
-            </motion.div>
+              {/* 上方向のカテゴリ */}
+              <Box zIndex={5}>
+                {Object.entries(currentGame.directionMap)
+                  .filter(([dir]) => dir === 'up')
+                  .map(([direction, category]) => (
+                    <DirectionIndicator 
+                      key={direction}
+                      direction={'up'}
+                      category={category}
+                      isActive={isDirectionActive('up')}
+                    />
+                  ))}
+              </Box>
+              
+              {/* メイン部分: 左右のカテゴリと中央の車画像 */}
+              <Flex alignItems="center" justifyContent="center" w="90%" flex="1" zIndex={5} mx="auto">
+                {/* 左方向のカテゴリ */}
+                <Box pl={1}>
+                  {Object.entries(currentGame.directionMap)
+                    .filter(([dir]) => dir === 'left')
+                    .map(([direction, category]) => (
+                      <DirectionIndicator 
+                        key={direction}
+                        direction={'left'}
+                        category={category}
+                        isActive={isDirectionActive('left')}
+                      />
+                    ))}
+                </Box>
+                
+                {/* 中央の車画像 */}
+                <motion.div
+                  key={`car-container-${currentCarIndex}-${cardRenderKey}`}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    cursor: swiping ? "grabbing" : "grab",
+                    position: 'relative',
+                    zIndex: 10
+                  }}
+                  ref={cardRef}
+                >
+                  <SwipableCarImage 
+                    car={currentCar} 
+                    lastResult={lastResult} 
+                    swipeDirection={swipeDirection}
+                    swiping={swiping}
+                    swipeDelta={swipeDelta}
+                    onSwipeStart={handleDragStart}
+                    onSwiping={handleDragging}
+                    onSwiped={handleDragEnd}
+                  />
+                </motion.div>
+                
+                {/* 右方向のカテゴリ */}
+                <Box>
+                  {Object.entries(currentGame.directionMap)
+                    .filter(([dir]) => dir === 'right')
+                    .map(([direction, category]) => (
+                      <DirectionIndicator 
+                        key={direction}
+                        direction={'right'}
+                        category={category}
+                        isActive={isDirectionActive('right')}
+                      />
+                    ))}
+                </Box>
+              </Flex>
+              
+              {/* 下方向のカテゴリ */}
+              <Box zIndex={5}>
+                {Object.entries(currentGame.directionMap)
+                  .filter(([dir]) => dir === 'down')
+                  .map(([direction, category]) => (
+                    <DirectionIndicator 
+                      key={direction}
+                      direction={'down'}
+                      category={category}
+                      isActive={isDirectionActive('down')}
+                    />
+                  ))}
+              </Box>
+            </Flex>
           )}
         </AnimatePresence>
-        
-        {/* 方向インジケーター (十字キー形式に配置) - 常に表示 */}
-        <Box
-          w="100%"
-          maxW="360px"
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          pb={2}
-          mt="auto"
-          sx={{
-            WebkitTapHighlightColor: "transparent",
-            "-webkit-tap-highlight-color": "rgba(0,0,0,0)",
-            "& *": {
-              WebkitTapHighlightColor: "transparent",
-              "-webkit-tap-highlight-color": "rgba(0,0,0,0)",
-              outline: "none !important"
-            }
-          }}
-          position="relative"
-          zIndex={5}
-        >
-          {/* 上方向 */}
-          <Box mb={1}>
-            {Object.entries(currentGame.directionMap)
-              .filter(([dir]) => dir === 'up')
-              .map(([direction, category]) => (
-                <DirectionIndicator 
-                  key={direction}
-                  direction={'up'}
-                  category={category}
-                  isActive={isDirectionActive('up')}
-                />
-              ))}
-          </Box>
-          
-          {/* 左右方向 */}
-          <Flex justifyContent="center" alignItems="center" w="100%" mb={1}>
-            <Box mr={2}>
-              {Object.entries(currentGame.directionMap)
-                .filter(([dir]) => dir === 'left')
-                .map(([direction, category]) => (
-                  <DirectionIndicator 
-                    key={direction}
-                    direction={'left'}
-                    category={category}
-                    isActive={isDirectionActive('left')}
-                  />
-                ))}
-            </Box>
-            
-            <Box ml={2}>
-              {Object.entries(currentGame.directionMap)
-                .filter(([dir]) => dir === 'right')
-                .map(([direction, category]) => (
-                  <DirectionIndicator 
-                    key={direction}
-                    direction={'right'}
-                    category={category}
-                    isActive={isDirectionActive('right')}
-                  />
-                ))}
-            </Box>
-          </Flex>
-          
-          {/* 下方向 */}
-          <Box>
-            {Object.entries(currentGame.directionMap)
-              .filter(([dir]) => dir === 'down')
-              .map(([direction, category]) => (
-                <DirectionIndicator 
-                  key={direction}
-                  direction={'down'}
-                  category={category}
-                  isActive={isDirectionActive('down')}
-                />
-              ))}
-          </Box>
-        </Box>
       </Box>
     </Container>
   );

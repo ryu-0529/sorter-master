@@ -27,7 +27,20 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
     }
   };
   
+  // 方向に応じたスタイルを設定
+  const getDirectionStyle = () => {
+    const isVertical = direction === 'left' || direction === 'right';
+    
+    return {
+      width: isVertical ? '40px' : '240px', // 上下（セダン、クロスカントリー）の幅を240pxに拡大
+      height: isVertical ? '400px' : '40px',
+      writingMode: isVertical ? 'vertical-rl' : 'horizontal-tb',
+      textOrientation: isVertical ? 'upright' : 'mixed',
+    };
+  };
+  
   const directionColor = getDirectionColor();
+  const directionStyle = getDirectionStyle();
   
   // 方向に応じたアニメーションを設定
   const getDirectionAnimation = () => {
@@ -96,10 +109,10 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
       borderRadius="md"
       fontWeight="bold"
       textAlign="center"
-      width="150px"
-      height="75px"
+      width={directionStyle.width}
+      height={directionStyle.height}
       display="flex"
-      flexDirection="column"
+      flexDirection={direction === "down" ? "column-reverse" : "column"} 
       justifyContent="center"
       alignItems="center"
       m={1}
@@ -110,33 +123,26 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
       sx={{
         WebkitTapHighlightColor: "transparent",
         "-webkit-tap-highlight-color": "rgba(0,0,0,0)",
-        outline: "none !important"
+        outline: "none !important",
+        writingMode: directionStyle.writingMode,
+        textOrientation: directionStyle.textOrientation
       }}
       // Chakra UIのtransitionプロパティではなくstyle経由でframer-motionのtransitionを設定
       style={{
         transition: "none" // Chakraのデフォルトトランジションを無効化
       }}
     >
-      <Box
-        as={motion.div}
-        variants={arrowVariants}
-        fontSize="xl"
-        fontWeight="bold"
-        lineHeight="1"
-      >
-        {
-          direction === 'up' ? '↑' : 
-          direction === 'right' ? '→' : 
-          direction === 'down' ? '↓' : 
-          '←'
-        }
-      </Box>
+{/* 矢印を削除 */}
       <Text 
         fontSize="sm"
         isTruncated 
-        maxW="140px"
+        maxW={direction === 'left' || direction === 'right' ? "40px" : "200px"}
         fontWeight="bold"
-        mt={1}
+        p={1}
+        sx={{
+          writingMode: directionStyle.writingMode,
+          textOrientation: directionStyle.textOrientation
+        }}
       >
         {category}
       </Text>
