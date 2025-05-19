@@ -173,15 +173,15 @@ const GameModePage: React.FC = () => {
                 <VStack spacing={4} align="flex-start">
                   <Button 
                     colorScheme="green" 
-                    onClick={handleJoinMultiplayer}
+                    onClick={() => navigate('/join-room')}
                     width="200px"
                   >
-                    マッチメイキング
+                    ルームに参加
                   </Button>
                   <Button 
                     variant="outline" 
                     colorScheme="green"
-                    onClick={handleCreateMultiplayer}
+                    onClick={() => navigate('/create-room')}
                     width="200px"
                   >
                     ルーム作成

@@ -31,22 +31,29 @@ export interface Car {
   category: CarCategory;
 }
 
-// ゲームセッション
+// プレイヤー状態の型定義 - デジタル存在としての「プレイヤー」の本質
+export interface PlayerState {
+  displayName: string;
+  score: number;
+  progress: number;
+  isComplete: boolean;
+  lastActiveTime?: number;  // プレイヤーの「最後の存在証明」としてのタイムスタンプ
+}
+
+// ゲームセッション - 時間と空間の中で展開する「共有された現実」の形式
 export interface GameSession {
   id: string;
   players: {
-    [uid: string]: {
-      displayName: string;
-      score: number;
-      progress: number;
-      isComplete: boolean;
-    }
+    [uid: string]: PlayerState
   };
   directionMap: DirectionMap;
   cars: Car[];
   startTime: number;
   endTime?: number;
+  lastActiveTime?: number;  // セッション全体の「存在の痕跡」
   isActive: boolean;
+  maxPlayers?: number;  // カスタムルーム用の最大プレイヤー数
+  creatorId?: string;   // ルーム作成者のID
 }
 
 // ランキングエントリ

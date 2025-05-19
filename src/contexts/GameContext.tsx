@@ -59,6 +59,8 @@ interface GameContextProps {
   startSinglePlayerGame: () => void;
   joinMultiplayerGame: () => Promise<void>;
   createMultiplayerGame: () => Promise<string>;
+  createCustomRoom: (playerCount: number) => Promise<string>;
+  joinRoomById: (roomId: string) => Promise<void>;
   leaveGame: () => void;
   handleSwipe: (direction: 'up' | 'down' | 'left' | 'right') => void;
   submitScore: (result: GameResult) => Promise<void>;
@@ -273,7 +275,160 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     return gameId;
   };
 
-  // マルチプレイヤーゲーム参加
+  // カスタムルームの作成（プレイヤー数を指定）
+  const createCustomRoom = async (playerCount: number): Promise<string> => {
+    if (!currentUser) throw new Error('ユーザーがログインしていません');
+    
+    // 最大プレイヤー数を確認（2〜4人）
+    const maxPlayers = Math.min(Math.max(playerCount, 2), 4);
+    
+    // ゲームカードを準備
+    const gameCards = prepareGameCards();
+    
+    // 最初のカードのカテゴリを必ず含むマッピングを生成
+    const firstCard = gameCards[0];
+    const initialDirectionMap = generateShuffledMap(firstCard.category);
+    
+    // マッピングが正しく生成されているか確認
+    const categoryInMap = Object.values(initialDirectionMap).includes(firstCard.category);
+    
+    // もし最初のカードのカテゴリがマップに含まれていない場合は再生成
+    let finalDirectionMap = initialDirectionMap;
+    if (!categoryInMap) {
+      finalDirectionMap = generateShuffledMap(firstCard.category);
+    }
+    
+    // ルームIDの生成（カスタムルームは明示的なIDフォーマットを使用）
+    // 6桁のランダムな英数字コードを作成
+    const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const newGameRef = ref(database, `game_sessions/${roomId}`);
+    
+    const newGame: GameSession = {
+      id: roomId,
+      players: {
+        [currentUser.uid]: {
+          displayName: currentUser.displayName || `Guest-${currentUser.uid.substring(0, 5)}`,
+          score: 0,
+          progress: 0,
+          isComplete: false
+        }
+      },
+      directionMap: finalDirectionMap,
+      cars: gameCards,
+      startTime: Date.now(),
+      isActive: true,
+      maxPlayers: maxPlayers  // 最大プレイヤー数を設定
+    };
+    
+    await set(newGameRef, newGame);
+    
+    // カスタムルーム情報をマッチメイキングとは別に保存
+    const roomsRef = ref(database, `custom_rooms/${roomId}`);
+    await set(roomsRef, {
+      creatorId: currentUser.uid,
+      playerCount: 1,
+      maxPlayers: maxPlayers,
+      created: Date.now(),
+      status: 'waiting'
+    });
+    
+    // 現在のゲーム状態を更新
+    setCurrentGame(newGame);
+    setCars(gameCards);
+    setCurrentCarIndex(0);
+    setScore(0);
+    setIsGameActive(true);
+    setGameResult(null);
+    
+    return roomId;
+  };
+
+  // 特定のルームIDを指定して参加
+  const joinRoomById = async (roomId: string): Promise<void> => {
+    if (!currentUser) throw new Error('ユーザーがログインしていません');
+    
+    // ルームIDが有効かチェック
+    const gameRef = ref(database, `game_sessions/${roomId}`);
+    const gameSnapshot = await get(gameRef);
+    
+    if (!gameSnapshot.exists()) {
+      throw new Error('指定されたルームが見つかりません');
+    }
+    
+    const gameData = gameSnapshot.val() as GameSession;
+    
+    // ゲームがアクティブかチェック
+    if (!gameData.isActive) {
+      throw new Error('このルームは既に終了しています');
+    }
+    
+    // 最大プレイヤー数をチェック
+    const currentPlayerCount = Object.keys(gameData.players).length;
+    if (currentPlayerCount >= (gameData.maxPlayers || 4)) {
+      throw new Error('このルームは満員です');
+    }
+    
+    // 既に参加しているかチェック
+    if (gameData.players[currentUser.uid]) {
+      // 既に参加している場合は状態を更新するだけ
+      setCurrentGame(gameData);
+      setCars(gameData.cars);
+      setCurrentCarIndex(0);
+      setScore(gameData.players[currentUser.uid].score || 0);
+      setIsGameActive(true);
+      setGameResult(null);
+      return;
+    }
+    
+    // プレイヤー情報を更新
+    const updatedPlayers = {
+      ...gameData.players,
+      [currentUser.uid]: {
+        displayName: currentUser.displayName || `Guest-${currentUser.uid.substring(0, 5)}`,
+        score: 0,
+        progress: 0,
+        isComplete: false
+      }
+    };
+    
+    // ゲーム情報を更新
+    await update(gameRef, {
+      players: updatedPlayers
+    });
+    
+    // カスタムルーム情報も更新
+    const roomsRef = ref(database, `custom_rooms/${roomId}`);
+    const roomSnapshot = await get(roomsRef);
+    
+    if (roomSnapshot.exists()) {
+      await update(roomsRef, {
+        playerCount: Object.keys(updatedPlayers).length
+      });
+      
+      // 最大人数に達したら状態を更新
+      const roomData = roomSnapshot.val();
+      if (Object.keys(updatedPlayers).length >= roomData.maxPlayers) {
+        await update(roomsRef, {
+          status: 'starting'
+        });
+      }
+    }
+    
+    // 現在のゲーム状態を更新
+    const updatedGameData = {
+      ...gameData,
+      players: updatedPlayers
+    };
+    
+    setCurrentGame(updatedGameData);
+    setCars(gameData.cars);
+    setCurrentCarIndex(0);
+    setScore(0);
+    setIsGameActive(true);
+    setGameResult(null);
+  };
+
+  // マルチプレイヤーゲーム参加（マッチメイキング方式）
   const joinMultiplayerGame = async () => {
     if (!currentUser) return;
     
@@ -358,18 +513,22 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     }
   };
 
-  // ゲーム退出
+  // ゲーム退出 - 存在と不在の境界を設計する関数
   const leaveGame = () => {
     if (!currentUser || !currentGame) return;
+    
+    // 現在の時刻を記録（最終アクティブタイム）
+    const endTime = Date.now();
     
     if (currentGame.id !== uuidv4()) {
       // マルチプレイヤーゲームの場合
       const gameRef = ref(database, `game_sessions/${currentGame.id}`);
       const playersRef = ref(database, `game_sessions/${currentGame.id}/players/${currentUser.uid}`);
       
-      // プレイヤー情報を削除
+      // プレイヤー情報を更新
       update(playersRef, {
-        isComplete: true
+        isComplete: true,
+        lastActiveTime: endTime
       });
       
       // すべてのプレイヤーが完了したらゲームを終了
@@ -379,15 +538,46 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           const allComplete = Object.values(game.players).every((player: any) => player.isComplete);
           
           if (allComplete) {
+            // 全プレイヤーがゲームを終了したらデータを削除するための準備
+            // まずはアナリティクスデータを抽出して保存
+            const analyticsData = {
+              roomId: currentGame.id,
+              playerCount: Object.keys(game.players).length,
+              maxPlayers: game.maxPlayers || 4,
+              startTime: game.startTime,
+              endTime,
+              duration: (endTime - game.startTime) / 1000,
+              // その他の分析に有用なデータ...
+            };
+            
+            // Firestoreにデータを保存
+            const analyticsRef = collection(firestore, 'game_analytics');
+            addDoc(analyticsRef, analyticsData)
+              .then(() => {
+                console.log('分析データを保存しました');
+                
+                // ゲームの状態を更新
+                update(gameRef, {
+                  isActive: false,
+                  endTime: endTime,
+                  lastActiveTime: endTime
+                });
+                
+                // 注: データの即時削除は行わず、Cloud Functionsによる定期的なクリーンアップに任せます
+                // これにより、クライアント側の処理の信頼性を高め、存在論的な不確実性を軽減します
+              })
+              .catch(err => console.error('分析データの保存に失敗:', err));
+          } else {
+            // まだ全員終了していない場合は終了時刻と状態のみ更新
             update(gameRef, {
-              isActive: false,
-              endTime: Date.now()
+              lastActiveTime: endTime
             });
           }
         }
       });
     }
     
+    // ローカル状態のリセット
     setCurrentGame(null);
     setCars([]);
     setCurrentCarIndex(0);
@@ -744,6 +934,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     startSinglePlayerGame,
     joinMultiplayerGame,
     createMultiplayerGame,
+    createCustomRoom,
+    joinRoomById,
     leaveGame,
     handleSwipe,
     submitScore,
