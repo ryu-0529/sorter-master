@@ -39,7 +39,8 @@ const GamePlayPage: React.FC = () => {
     submitScore,
     isTutorialMode,
     tutorialStep,
-    advanceTutorial
+    advanceTutorial,
+    finishTutorial
   } = useGame();
   const { currentUser } = useAuth();
   
@@ -239,11 +240,12 @@ const GamePlayPage: React.FC = () => {
   
   // ゲーム終了時の処理
   useEffect(() => {
-    if (gameResult) {
+    if (gameResult && !isTutorialMode) {
+      // チュートリアルモード以外の場合にのみ結果画面に遷移
       submitScore(gameResult);
       navigate('/result');
     }
-  }, [gameResult, submitScore, navigate]);
+  }, [gameResult, submitScore, navigate, isTutorialMode]);
   
   // カウントダウンを管理
   useEffect(() => {
@@ -281,14 +283,24 @@ const GamePlayPage: React.FC = () => {
     return () => clearInterval(timer);
   }, [isGameActive, currentGame, gameReady]);
   
-  // チュートリアルモードで5枚の仕分けが終わったら完了画面を表示
+  // チュートリアルモードで5枚の仕分けが終わったら完了ステップに進める
   useEffect(() => {
+    // チュートリアルモードの場合のみ処理を実行
     if (isTutorialMode && currentCarIndex === 5 && tutorialStep !== 4) {
       // 5枚の仕分けが終わったらチュートリアル完了とする
       // advanceTutorialを呼び出してステップ4に進める
       advanceTutorial();
     }
   }, [isTutorialMode, currentCarIndex, tutorialStep, advanceTutorial]);
+  
+  // チュートリアル完了時、ゲームモード選択画面に自動遷移
+  useEffect(() => {
+    if (isTutorialMode && tutorialStep === 4) {
+      // チュートリアル完了状態をリセットしてからモード選択画面に遷移
+      finishTutorial();
+      navigate('/modes');
+    }
+  }, [isTutorialMode, tutorialStep, navigate, finishTutorial]);
   
   // ゲーム退出処理
   const handleQuitGame = useCallback(() => {
@@ -318,7 +330,7 @@ const GamePlayPage: React.FC = () => {
         top="50%"
         left="50%"
         transform="translate(-50%, -50%)"
-        bg="rgba(0, 0, 0, 0.7)"
+        bg="rgba(0, 0, 0, 0.6)"
         color="white"
         p={5}
         borderRadius="lg"
@@ -326,17 +338,24 @@ const GamePlayPage: React.FC = () => {
         textAlign="center"
         zIndex={1000}
         boxShadow="lg"
+        backdropFilter="blur(3px)"
+        border="1px solid"
+        borderColor="blue.300"
       >
         <Heading size="md" mb={3} color="blue.300">
           チュートリアル完了！
         </Heading>
         <Text mb={4}>これでチュートリアルは終了です。実際のゲームでは制限時間内にできるだけ多くの車を正しく分類しましょう。</Text>
+        <Text fontSize="sm" color="gray.300" mb={3}>
+          背景のゲーム画面を確認することができます。
+        </Text>
         <Button
           colorScheme="blue"
           onClick={handleCompletion}
           mt={2}
+          size="lg"
         >
-          完了
+          モード選択に戻る
         </Button>
       </Box>
     );
@@ -449,7 +468,7 @@ const GamePlayPage: React.FC = () => {
       {/* チュートリアル開始ガイダンス - 初期段階でのみ表示 */}
       {isTutorialMode && tutorialStep === 0 && <TutorialGuidance />}
       
-      {/* チュートリアル完了画面 - 5枚分の仕分けが終わった場合のみ表示 */}
+      {/* チュートリアル完了画面 - チュートリアルモードで5枚分の仕分けが終わった場合のみ表示 */}
       {isTutorialMode && tutorialStep === 4 && <TutorialCompletionScreen />}
       
       {/* ゲーム情報ヘッダー */}

@@ -1,0 +1,30 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "game_sessions": {
+      ".read": true,
+      ".write": "auth != null",
+      "$session_id": {
+        ".read": true,
+        ".write": "auth != null",
+        "players": {
+          "$user_id": {
+            ".write": "auth != null && auth.uid === $user_id"
+          }
+        }
+      }
+    },
+    "online_users": {
+      ".read": true,
+      ".write": "auth != null",
+      "$user_id": {
+        ".write": "auth != null && auth.uid === $user_id"
+      }
+    },
+    "matchmaking": {
+      ".read": true,
+      ".write": "auth != null"
+    }
+  }
+}
