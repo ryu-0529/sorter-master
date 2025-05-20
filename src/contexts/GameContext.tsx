@@ -191,8 +191,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       console.log('再生成したマップ:', finalDirectionMap);
     }
     
+    // シングルプレイヤーゲームのIDには明示的なプレフィックスを使用して識別を容易にする
+    const singlePlayerGameId = `singleplayer-${uuidv4()}`;
+    
     const newGame: GameSession = {
-      id: uuidv4(),
+      id: singlePlayerGameId,
       players: {
         [currentUser.uid]: {
           displayName: currentUser.displayName || `Guest-${currentUser.uid.substring(0, 5)}`,
@@ -204,7 +207,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       directionMap: finalDirectionMap, // 修正: 確認済みのマッピングを使用
       cars: gameCards,
       startTime: Date.now(),
-      isActive: true
+      isActive: true,
+      gameType: 'singleplayer' // ゲームタイプを明示的に設定
     };
     
     setCurrentGame(newGame);
@@ -520,7 +524,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     // 現在の時刻を記録（最終アクティブタイム）
     const endTime = Date.now();
     
-    if (currentGame.id !== uuidv4()) {
+    // ゲームIDからシングルプレイヤーかマルチプレイヤーかを判定
+    const isMultiplayerGame = !currentGame.id.startsWith('singleplayer-') && currentGame.id !== 'tutorial';
+    
+    if (isMultiplayerGame) {
       // マルチプレイヤーゲームの場合
       const gameRef = ref(database, `game_sessions/${currentGame.id}`);
       const playersRef = ref(database, `game_sessions/${currentGame.id}/players/${currentUser.uid}`);
@@ -647,41 +654,16 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setCurrentCarIndex(nextIndex);
     
     // ゲーム進捗更新
-    if (currentUser && currentGame.id !== uuidv4()) {
+    // ゲームIDからシングルプレイヤーかマルチプレイヤーかを判定
+    const isMultiplayerGame = !currentGame.id.startsWith('singleplayer-') && currentGame.id !== 'tutorial';
+    
+    if (currentUser && isMultiplayerGame) {
       // マルチプレイヤーゲームの場合はFirebaseを更新
       const progress = Math.floor((nextIndex / cars.length) * 100);
       
       update(ref(database, `game_sessions/${currentGame.id}/players/${currentUser.uid}`), {
         score: newScore,
         progress
-      });
-    }
-    
-    // スワイプ後に方向マップをシャッフル（次のカードが存在する場合）
-    if (nextIndex < cars.length) {
-      // 重要: ここでnextIndexを使用して次のカードを判断する
-      const nextCar = cars[nextIndex];
-      console.log('次のカード:', nextCar); // デバッグ用
-      
-      // 次のカードのカテゴリを必ず含んだマップを生成
-      const shuffledDirectionMap = generateShuffledMap(nextCar.category);
-      console.log('新しい方向マップ:', shuffledDirectionMap); // デバッグ用
-      
-      // 生成された方向マップが、次のカードのカテゴリを含んでいるか確認
-      const categoryInMap = Object.values(shuffledDirectionMap).includes(nextCar.category);
-      console.log(`マップに次のカードのカテゴリ(${nextCar.category})が含まれているか:`, categoryInMap);
-      
-      // もし含まれていない場合は再生成
-      let finalDirectionMap = shuffledDirectionMap;
-      if (!categoryInMap) {
-        console.log('次のカードのカテゴリがマップに含まれていないため再生成します');
-        finalDirectionMap = generateShuffledMap(nextCar.category);
-        console.log('再生成したマップ:', finalDirectionMap);
-      }
-      
-      setCurrentGame({
-        ...currentGame,
-        directionMap: finalDirectionMap
       });
     }
     
@@ -698,8 +680,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         timeInSeconds
       };
       
-      // マルチプレイヤーゲームでない場合はここで結果を設定
-      if (currentGame.id === uuidv4() || !currentUser) {
+      // ゲームIDからシングルプレイヤーかマルチプレイヤーかを判定
+      const isMultiplayerGame = !currentGame.id.startsWith('singleplayer-') && currentGame.id !== 'tutorial';
+      
+      // シングルプレイヤーゲームの場合はここで結果を設定
+      if (!isMultiplayerGame || !currentUser) {
         setGameResult(result);
         setIsGameActive(false);
       } else {
@@ -729,6 +714,47 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
             }
             setIsGameActive(false);
           });
+      }
+    } else {
+      // ゲームが終了していない場合のみ、次のカードの方向マップをセットアップ
+      try {
+        // 防御的にカードの存在を確認
+        if (nextIndex < cars.length) {
+          const nextCar = cars[nextIndex];
+          
+          if (nextCar && nextCar.category) {
+            console.log('次のカード:', nextCar); // デバッグ用
+            
+            // 次のカードのカテゴリを必ず含んだマップを生成
+            const shuffledDirectionMap = generateShuffledMap(nextCar.category);
+            console.log('新しい方向マップ:', shuffledDirectionMap); // デバッグ用
+            
+            // 生成された方向マップが、次のカードのカテゴリを含んでいるか確認
+            const categoryInMap = Object.values(shuffledDirectionMap).includes(nextCar.category);
+            console.log(`マップに次のカードのカテゴリ(${nextCar.category})が含まれているか:`, categoryInMap);
+            
+            // もし含まれていない場合は再生成
+            let finalDirectionMap = shuffledDirectionMap;
+            if (!categoryInMap) {
+              console.log('次のカードのカテゴリがマップに含まれていないため再生成します');
+              finalDirectionMap = generateShuffledMap(nextCar.category);
+              console.log('再生成したマップ:', finalDirectionMap);
+            }
+            
+            // 重要: 更新されるオブジェクトが既存のcurrentGameオブジェクトを正しく複製していることを確認
+            if (currentGame) {
+              setCurrentGame({
+                ...currentGame,
+                directionMap: finalDirectionMap
+              });
+            }
+          } else {
+            console.error('次のカードが不正な形式です', nextCar);
+          }
+        }
+      } catch (error) {
+        console.error('方向マップの更新中にエラーが発生しました:', error);
+        // エラーが発生しても、ゲームの状態は保持する（不整合が起きないようにする）
       }
     }
   };
@@ -855,6 +881,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const submitScore = async (result: GameResult) => {
     if (!currentUser) return;
     
+    // チュートリアルモードの場合はランキングに登録しない
+    if (isTutorialMode || (currentGame && currentGame.id === 'tutorial')) {
+      console.log('チュートリアルモードはランキングに登録されません');
+      await fetchRankings(); // ランキングは更新する
+      return;
+    }
+    
     // ゲストユーザー（匿名認証）の場合はランキングに登録しない
     if (currentUser.isAnonymous) {
       console.log('ゲストユーザーはランキングに登録されません');
@@ -904,7 +937,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
   // マルチプレイヤーゲームのリアルタイム更新を監視
   useEffect(() => {
-    if (!currentUser || !currentGame || currentGame.id === uuidv4()) return;
+    // シングルプレイヤーゲームの場合は、Firebase監視は不要
+    const isMultiplayerGame = currentGame && !currentGame.id.startsWith('singleplayer-') && currentGame.id !== 'tutorial';
+    
+    if (!currentUser || !currentGame || !isMultiplayerGame) return;
     
     const gameRef = ref(database, `game_sessions/${currentGame.id}`);
     const unsubscribe = onValue(gameRef, (snapshot) => {

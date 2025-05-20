@@ -54,6 +54,7 @@ export interface GameSession {
   isActive: boolean;
   maxPlayers?: number;  // カスタムルーム用の最大プレイヤー数
   creatorId?: string;   // ルーム作成者のID
+  gameType?: string;    // ゲームタイプ（singleplayer/multiplayerなど）
 }
 
 // ランキングエントリ
