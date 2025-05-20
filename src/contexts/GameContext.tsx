@@ -690,6 +690,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       const endTime = Date.now();
       const timeInSeconds = Math.floor((endTime - currentGame.startTime) / 1000);
       
+      // ゲーム結果を生成
       const result: GameResult = {
         score: newScore,
         correctAnswers: newScore,
@@ -697,18 +698,124 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         timeInSeconds
       };
       
-      setGameResult(result);
-      setIsGameActive(false);
-      
-      if (currentUser && currentGame.id !== uuidv4()) {
-        // マルチプレイヤーゲームの場合
+      // マルチプレイヤーゲームでない場合はここで結果を設定
+      if (currentGame.id === uuidv4() || !currentUser) {
+        setGameResult(result);
+        setIsGameActive(false);
+      } else {
+        // マルチプレイヤーゲームの場合は完了処理
         update(ref(database, `game_sessions/${currentGame.id}/players/${currentUser.uid}`), {
-          isComplete: true
+          isComplete: true,
+          score: newScore,
+          completionTime: endTime,
+          timeInSeconds
         });
+        
+        // プレイヤーの順位を計算
+        calculateMultiplayerRanking(currentGame.id, currentUser.uid, newScore, timeInSeconds)
+          .then(playerRank => {
+            if (playerRank) {
+              // マルチプレイヤー情報を含めた結果を設定
+              const multiplayerResult: GameResult = {
+                ...result,
+                isMultiplayer: true,
+                playerRank,
+                totalPlayers: Object.keys(currentGame.players).length
+              };
+              setGameResult(multiplayerResult);
+            } else {
+              // 順位計算に失敗した場合は通常の結果を設定
+              setGameResult(result);
+            }
+            setIsGameActive(false);
+          });
       }
     }
   };
   
+  // マルチプレイヤーゲーム用の順位計算と結果処理
+  const calculateMultiplayerRanking = async (gameId: string, playerId: string, playerScore: number, playerTime: number) => {
+    try {
+      console.log('マルチプレイヤーの順位計算を開始します');
+      
+      // ゲームデータを取得
+      const gameRef = ref(database, `game_sessions/${gameId}`);
+      const gameSnapshot = await get(gameRef);
+      
+      if (!gameSnapshot.exists()) {
+        console.error('ゲームデータが見つかりません');
+        return;
+      }
+      
+      const gameData = gameSnapshot.val() as GameSession;
+      
+      // すべてのプレイヤーが完了しているかチェック
+      const allPlayersComplete = Object.values(gameData.players).every((player: any) => player.isComplete);
+      
+      // 現在のプレイヤーの順位データを計算・更新
+      const playerRankingRef = ref(database, `game_sessions/${gameId}/players/${playerId}/ranking`);
+      
+      // プレイヤーの順位を計算
+      // スコアが高い順、同点の場合は時間が短い順でランク付け
+      const playerRankings = Object.entries(gameData.players)
+        .map(([uid, playerData]: [string, any]) => ({
+          uid,
+          displayName: playerData.displayName,
+          score: playerData.score || 0,
+          time: playerData.timeInSeconds || Infinity,
+          isComplete: playerData.isComplete || false
+        }))
+        .filter(player => player.isComplete || player.uid === playerId) // 完了したプレイヤーと自分自身のみ
+        .sort((a, b) => {
+          // スコアが高い順（降順）
+          if (b.score !== a.score) {
+            return b.score - a.score;
+          }
+          // 同点の場合は時間が短い順（昇順）
+          return a.time - b.time;
+        });
+      
+      // 現在のプレイヤーの順位を特定
+      const playerRank = playerRankings.findIndex(p => p.uid === playerId) + 1;
+      
+      // 順位データをFirebaseに保存
+      await update(playerRankingRef, {
+        rank: playerRank,
+        totalPlayers: Object.keys(gameData.players).length,
+        allComplete: allPlayersComplete
+      });
+      
+      // すべてのプレイヤーが完了した場合は、ゲーム全体の順位データを保存
+      if (allPlayersComplete) {
+        // 全プレイヤーの最終順位を保存
+        const finalRankingsRef = ref(database, `game_sessions/${gameId}/finalRankings`);
+        await set(finalRankingsRef, playerRankings.map((player, index) => ({
+          uid: player.uid,
+          displayName: player.displayName,
+          score: player.score,
+          time: player.time,
+          rank: index + 1
+        })));
+        
+        // ゲームの状態を「完了」に更新
+        await update(gameRef, {
+          isActive: false,
+          isComplete: true,
+          endTime: Date.now()
+        });
+        
+        console.log('全プレイヤーが完了しました。最終順位を保存しました。');
+      } else {
+        console.log(`プレイヤー ${playerId} の暫定順位: ${playerRank}/${Object.keys(gameData.players).length}`);
+      }
+      
+      return playerRank;
+    } catch (error) {
+      console.error('順位計算中にエラーが発生しました:', error);
+      return null;
+    }
+  };
+
   // 特定のカテゴリを必ず含む方向マップを生成する関数
   const generateShuffledMap = (categoryToInclude: CarCategory): DirectionMap => {
     // 指定されたカテゴリ以外から3つランダムに選択

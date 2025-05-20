@@ -123,8 +123,49 @@ const ResultPage: React.FC = () => {
         >
           <VStack spacing={6}>
             <Heading as="h2" size="lg" color="brand.600">
-              あなたのスコア
+              {gameResult.isMultiplayer ? 'マルチプレイヤー対戦結果' : 'あなたのスコア'}
             </Heading>
+            
+            {gameResult.isMultiplayer && gameResult.playerRank && (
+              <Flex
+                direction="column"
+                align="center"
+                justify="center"
+                p={6}
+                bg={gameResult.playerRank === 1 ? 'yellow.50' : 'gray.50'}
+                borderRadius="xl"
+                boxShadow="md"
+                w="full"
+                maxW="md"
+                position="relative"
+                overflow="hidden"
+              >
+                {gameResult.playerRank === 1 && (
+                  <Box
+                    position="absolute"
+                    top={0}
+                    left={0}
+                    right={0}
+                    h="8px"
+                    bg="yellow.400"
+                  />
+                )}
+                
+                <Heading size="xl" color={gameResult.playerRank === 1 ? 'yellow.500' : 'gray.600'} mb={2}>
+                  {gameResult.playerRank}位 / {gameResult.totalPlayers}人中
+                </Heading>
+                
+                <Text fontWeight="bold" fontSize="md" color="gray.500">
+                  {gameResult.playerRank === 1 
+                    ? '1位おめでとうございます！最高の成績です！' 
+                    : gameResult.playerRank === 2 
+                      ? '2位獲得！あと少しで1位でした！'
+                      : gameResult.playerRank === 3
+                        ? '3位入賞！よくがんばりましたね！'
+                        : 'またチャレンジしてより高い順位を目指しましょう！'}
+                </Text>
+              </Flex>
+            )}
             
             <HStack spacing={8} wrap="wrap" justify="center">
               <Box textAlign="center" p={4}>

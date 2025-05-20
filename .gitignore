@@ -23,6 +23,12 @@ firebase-debug.log
 firebase-debug.*.log
 .firebase/
 serviceAccountKey.json
+functions/node_modules/
+functions/.env
+functions/.env.local
+functions/.runtimeconfig.json
+ui-debug.log
+*-debug.log
 
 # ログ
 npm-debug.log*

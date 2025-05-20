@@ -72,4 +72,8 @@ export interface GameResult {
   correctAnswers: number;
   totalAnswers: number;
   timeInSeconds: number;
+  // マルチプレイヤー用の追加フィールド
+  isMultiplayer?: boolean;
+  playerRank?: number;
+  totalPlayers?: number;
 }
