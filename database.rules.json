@@ -4,173 +4,236 @@
     ".read": false,
     ".write": false,
     
-    // ゲームセッション管理
+    // ゲームセッション管理（アプリケーション互換性を考慮）
     "game_sessions": {
+      // 認証されたユーザーのみアクセス可能（アプリの機能を維持）
       ".read": "auth != null",
-      ".write": false, // デフォルトでは書き込み不可
+      ".write": false, // 個別ルールのみ許可
       
       "$sessionId": {
         ".read": "auth != null",
         ".write": "auth != null && (
           // 新規セッション作成: 作成者IDが自分であることを確認
-          (!data.exists() && newData.child('creatorId').val() === auth.uid) ||
-          // 既存セッション: 作成者または参加者のみ
-          (data.exists() && (
-            data.child('creatorId').val() === auth.uid ||
-            data.child('players').hasChild(auth.uid)
-          ))
+          (!data.exists() && newData.child('players').hasChild(auth.uid)) ||
+          // 既存セッション: 参加者のみ変更可能
+          (data.exists() && data.child('players').hasChild(auth.uid))
         )",
         
         // セッションメタデータ
-        "creatorId": {
-          ".validate": "newData.isString() && newData.val() === auth.uid"
+        "startTime": {
+          ".validate": "newData.isNumber()"
         },
-        "status": {
-          ".validate": "newData.isString() && newData.val().matches(/^(waiting|active|finished)$/)"
+        "isActive": {
+          ".validate": "newData.isBoolean()"
+        },
+        "endTime": {
+          ".validate": "newData.isNumber() || newData.val() === null"
+        },
+        "isComplete": {
+          ".validate": "newData.isBoolean() || newData.val() === null"
         },
         "maxPlayers": {
           ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 4"
         },
-        "gameType": {
-          ".validate": "newData.isString()"
-        },
-        "createdAt": {
-          ".validate": "newData.isNumber()"
+        "lastActiveTime": {
+          ".validate": "newData.isNumber() || newData.val() === null"
         },
         
         // プレイヤー管理
         "players": {
-          ".read": "auth != null",
-          
           "$playerId": {
             ".read": "auth != null",
             ".write": "auth != null && (
-              // 自分自身のプレイヤーデータ、または
+              // 自分自身のプレイヤーデータの変更
               auth.uid === $playerId ||
-              // セッション作成者による管理
-              root.child('game_sessions').child($sessionId).child('creatorId').val() === auth.uid
+              // 新規プレイヤー追加（自分自身のみ）
+              (!data.exists() && auth.uid === $playerId)
             )",
             
             "displayName": {
               ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 20"
             },
-            "joinedAt": {
-              ".validate": "newData.isNumber()"
-            },
-            "ready": {
-              ".validate": "newData.isBoolean()"
-            }
-          }
-        },
-        
-        // ゲームプレイデータ
-        "gameplay": {
-          ".read": "auth != null && data.parent().child('players').hasChild(auth.uid)",
-          
-          "$playerId": {
-            ".read": "auth != null && data.parent().parent().child('players').hasChild(auth.uid)",
-            ".write": "auth != null && auth.uid === $playerId",
-            
             "score": {
               ".validate": "newData.isNumber() && newData.val() >= 0"
             },
             "progress": {
               ".validate": "newData.isNumber() && newData.val() >= 0"
             },
-            "lastUpdate": {
-              ".validate": "newData.isNumber()"
+            "isComplete": {
+              ".validate": "newData.isBoolean()"
+            },
+            "completionTime": {
+              ".validate": "newData.isNumber() || newData.val() === null"
+            },
+            "timeInSeconds": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "lastActiveTime": {
+              ".validate": "newData.isNumber() || newData.val() === null"
+            },
+            "ranking": {
+              "rank": {
+                ".validate": "newData.isNumber() && newData.val() > 0"
+              },
+              "totalPlayers": {
+                ".validate": "newData.isNumber() && newData.val() > 0"
+              },
+              "allComplete": {
+                ".validate": "newData.isBoolean()"
+              }
             }
           }
-        }
-      }
-    },
-    
-    // マッチメイキングシステム（セキュリティ強化）
-    "matchmaking": {
-      ".read": "auth != null",
-      ".write": false, // 個別ルールのみ許可
-      
-      "queues": {
-        "$queueType": {
-          ".read": "auth != null",
-          ".write": false,
+        },
+        
+        // ゲームコンフィグレーション
+        "directionMap": {
+          ".read": "auth != null && data.parent().child('players').hasChild(auth.uid)",
+          ".write": "auth != null && data.parent().child('players').hasChild(auth.uid)",
           
-          "$userId": {
-            ".read": "auth != null",
-            ".write": "auth != null && auth.uid === $userId", // 自分のエントリーのみ
-            
-            "displayName": {
-              ".validate": "newData.isString() && newData.val().length > 0"
+          "up": {
+            ".validate": "newData.isString()"
+          },
+          "right": {
+            ".validate": "newData.isString()"
+          },
+          "down": {
+            ".validate": "newData.isString()"
+          },
+          "left": {
+            ".validate": "newData.isString()"
+          }
+        },
+        
+        // ゲームカードデータ
+        "cars": {
+          ".read": "auth != null && data.parent().child('players').hasChild(auth.uid)",
+          ".write": "auth != null && data.parent().child('players').hasChild(auth.uid)",
+          
+          "$index": {
+            "id": {
+              ".validate": "newData.isString()"
             },
-            "queuedAt": {
-              ".validate": "newData.isNumber()"
+            "imageUrl": {
+              ".validate": "newData.isString()"
             },
-            "gamePreferences": {
+            "category": {
               ".validate": "newData.isString()"
             }
           }
+        },
+        
+        // 最終順位データ
+        "finalRankings": {
+          ".read": "auth != null && data.parent().child('players').hasChild(auth.uid)",
+          ".write": "auth != null && data.parent().child('players').hasChild(auth.uid)",
+          
+          "$index": {
+            "uid": {
+              ".validate": "newData.isString()"
+            },
+            "displayName": {
+              ".validate": "newData.isString()"
+            },
+            "score": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "time": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "rank": {
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            }
+          }
         }
       }
     },
     
-    // オンラインユーザー状態管理
-    "online_users": {
-      ".read": "auth != null",
+    // マッチメイキングシステム（機能性とセキュリティのバランス）
+    "matchmaking": {
+      ".read": "auth != null", // マッチメイキング機能のために必要
       ".write": false,
       
-      "$userId": {
+      "$gameId": {
         ".read": "auth != null",
-        ".write": "auth != null && auth.uid === $userId", // 自分の状態のみ変更可能
+        ".write": "auth != null && (
+          // 新規マッチメイキングエントリー作成
+          (!data.exists() && newData.child('creatorId').val() === auth.uid) ||
+          // 既存エントリーの更新（作成者のみ）
+          (data.exists() && data.child('creatorId').val() === auth.uid)
+        )",
         
-        "status": {
-          ".validate": "newData.isString() && newData.val().matches(/^(online|away|ingame)$/)"
+        "creatorId": {
+          ".validate": "newData.isString() && newData.val() === auth.uid"
         },
-        "lastSeen": {
+        "playerCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 4"
+        },
+        "created": {
           ".validate": "newData.isNumber()"
         },
-        "currentSession": {
-          ".validate": "newData.isString() || newData.val() === null"
+        "status": {
+          ".validate": "newData.isString() && newData.val().matches(/^(waiting|starting)$/)"
         }
       }
     },
     
-    // アクティブセッション監視（システム用）
-    "active_sessions": {
-      ".read": "auth != null",
+    // カスタムルーム管理（アプリケーションコードで使用）
+    "custom_rooms": {
+      ".read": "auth != null", // ルーム検索のために必要
+      ".write": false,
+      
+      "$roomId": {
+        ".read": "auth != null",
+        ".write": "auth != null && (
+          // 新規ルーム作成
+          (!data.exists() && newData.child('creatorId').val() === auth.uid) ||
+          // 既存ルームの更新（作成者または参加により）
+          (data.exists() && (
+            data.child('creatorId').val() === auth.uid ||
+            root.child('game_sessions').child($roomId).child('players').hasChild(auth.uid)
+          ))
+        )",
+        
+        "creatorId": {
+          ".validate": "newData.isString() && newData.val() === auth.uid"
+        },
+        "playerCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 4"
+        },
+        "maxPlayers": {
+          ".validate": "newData.isNumber() && newData.val() >= 2 && newData.val() <= 4"
+        },
+        "created": {
+          ".validate": "newData.isNumber()"
+        },
+        "status": {
+          ".validate": "newData.isString() && newData.val().matches(/^(waiting|starting)$/)"
+        }
+      }
+    },
+    
+    // 最小限の公開セッション情報（ゲーム検索用）
+    "public_game_list": {
+      ".read": "auth != null", // 公開ゲームリスト検索のため
       ".write": false,
       
       "$sessionId": {
         ".read": "auth != null",
         ".write": "auth != null && (
-          root.child('game_sessions').child($sessionId).child('creatorId').val() === auth.uid ||
           root.child('game_sessions').child($sessionId).child('players').hasChild(auth.uid)
         )",
         
-        "lastActivity": {
-          ".validate": "newData.isNumber()"
-        },
+        // 公開情報のみ（機密情報は除外）
         "playerCount": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4"
-        }
-      }
-    },
-    
-    // ユーザープロフィール（基本情報のみ）
-    "user_profiles": {
-      ".read": "auth != null",
-      ".write": false,
-      
-      "$userId": {
-        ".read": "auth != null",
-        ".write": "auth != null && auth.uid === $userId",
-        
-        "displayName": {
-          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 20"
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 4"
         },
-        "avatar": {
-          ".validate": "newData.isString() || newData.val() === null"
+        "maxPlayers": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 4"
         },
-        "updatedAt": {
+        "status": {
+          ".validate": "newData.isString() && newData.val().matches(/^(waiting|starting)$/)"
+        },
+        "created": {
           ".validate": "newData.isNumber()"
         }
       }
