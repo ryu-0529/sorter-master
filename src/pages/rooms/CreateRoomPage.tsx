@@ -29,14 +29,17 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaUsers, FaCopy, FaCheck, FaChevronDown, FaCrown } from 'react-icons/fa';
 import { useGame } from '../../contexts/GameContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAdMob } from '../../contexts/AdMobContext';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../services/firebase';
+import BannerAdSpace from '../../components/BannerAdSpace';
 
 const CreateRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const { createCustomRoom } = useGame();
   const { currentUser } = useAuth();
+  const { showInterstitialAd } = useAdMob();
   
   // 状態管理
   const [playerCount, setPlayerCount] = useState<number>(4);
@@ -110,6 +113,9 @@ const CreateRoomPage: React.FC = () => {
     setIsLoading(true);
     
     try {
+      // インターステイシャル広告を表示
+      await showInterstitialAd();
+      
       console.log('ルーム作成: playerCount =', playerCount, typeof playerCount);
       const newRoomId = await createCustomRoom(playerCount);
       setRoomId(newRoomId);
@@ -445,7 +451,15 @@ const CreateRoomPage: React.FC = () => {
             </VStack>
           </Box>
         )}
+        
+        {/* バナー広告用スペース */}
+        <Box pb={16}>
+          {/* バナー広告エリア分のスペースを確保 */}
+        </Box>
       </VStack>
+      
+      {/* バナー広告 */}
+      <BannerAdSpace />
     </Container>
   );
 };

@@ -3,6 +3,7 @@ import { ChakraProvider, extendTheme } from '@chakra-ui/react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { GameProvider } from './contexts/GameContext';
+import { AdMobProvider } from './contexts/AdMobContext';
 import WelcomePage from './pages/WelcomePage';
 import HomePage from './pages/HomePage';
 import GameModePage from './pages/GameModePage';
@@ -85,25 +86,27 @@ const theme = extendTheme({
 function App() {
   return (
     <ChakraProvider theme={theme}>
-      <AuthProvider>
-        <GameProvider>
-          <Router>
-            <Routes>
-              <Route path="/" element={<WelcomePage />} />
-              <Route path="/home" element={<HomePage />} />
-              <Route path="/modes" element={<GameModePage />} />
-              <Route path="/play" element={<GamePlayPage />} />
-              <Route path="/result" element={<ResultPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/join-room" element={<JoinRoomPage />} />
-              <Route path="/create-room" element={<CreateRoomPage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </Router>
-        </GameProvider>
-      </AuthProvider>
+      <AdMobProvider>
+        <AuthProvider>
+          <GameProvider>
+            <Router>
+              <Routes>
+                <Route path="/" element={<WelcomePage />} />
+                <Route path="/home" element={<HomePage />} />
+                <Route path="/modes" element={<GameModePage />} />
+                <Route path="/play" element={<GamePlayPage />} />
+                <Route path="/result" element={<ResultPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/join-room" element={<JoinRoomPage />} />
+                <Route path="/create-room" element={<CreateRoomPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Router>
+          </GameProvider>
+        </AuthProvider>
+      </AdMobProvider>
     </ChakraProvider>
   );
 }

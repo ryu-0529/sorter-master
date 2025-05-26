@@ -16,7 +16,9 @@ import { useNavigate } from 'react-router-dom';
 import { FaTrophy, FaUsers, FaInfoCircle, FaArrowLeft } from 'react-icons/fa';
 import { useGame } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useAdMob } from '../contexts/AdMobContext';
 import TutorialOverlay from '../components/TutorialOverlay';
+import BannerAdSpace from '../components/BannerAdSpace';
 
 const GameModePage: React.FC = () => {
   const navigate = useNavigate();
@@ -32,12 +34,16 @@ const GameModePage: React.FC = () => {
     startInteractiveTutorial
   } = useGame();
   const { currentUser } = useAuth();
+  const { showInterstitialAd } = useAdMob();
   
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   
   // ランキング戦（1人プレイ）開始
-  const handleStartSinglePlayer = () => {
+  const handleStartSinglePlayer = async () => {
+    // インターステイシャル広告を表示
+    await showInterstitialAd();
+    
     startSinglePlayerGame();
     navigate('/play');
   };
@@ -219,7 +225,15 @@ const GameModePage: React.FC = () => {
             </HStack>
           </Box>
         </VStack>
+        
+        {/* バナー広告用スペース */}
+        <Box pb={16}>
+          {/* バナー広告エリア分のスペースを確保 */}
+        </Box>
       </VStack>
+      
+      {/* バナー広告 */}
+      <BannerAdSpace />
     </Container>
   );
 };

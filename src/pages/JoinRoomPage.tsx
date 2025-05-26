@@ -19,12 +19,15 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaSearch } from 'react-icons/fa';
 import { useGame } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useAdMob } from '../contexts/AdMobContext';
+import BannerAdSpace from '../components/BannerAdSpace';
 
 const JoinRoomPage: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const { joinRoomById } = useGame();
   const { currentUser } = useAuth();
+  const { showInterstitialAd } = useAdMob();
   
   // 状態管理
   const [roomId, setRoomId] = useState<string>('');
@@ -50,6 +53,9 @@ const JoinRoomPage: React.FC = () => {
     setIsLoading(true);
     
     try {
+      // インターステイシャル広告を表示
+      await showInterstitialAd();
+      
       // この関数はGameContextに実装されていないため
       // 後で実装する必要があります
       await joinRoomById(roomId);
@@ -140,7 +146,15 @@ const JoinRoomPage: React.FC = () => {
             </Button>
           </VStack>
         </Box>
+        
+        {/* バナー広告用スペース */}
+        <Box pb={16}>
+          {/* バナー広告エリア分のスペースを確保 */}
+        </Box>
       </VStack>
+      
+      {/* バナー広告 */}
+      <BannerAdSpace />
     </Container>
   );
 };
