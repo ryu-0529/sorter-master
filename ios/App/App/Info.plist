@@ -48,7 +48,7 @@
 	
 	<!-- Google AdMob Configuration -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-1982702464173576~8524038995</string>
 	
 	<!-- SKAdNetwork Configuration for iOS 14+ -->
 	<key>SKAdNetworkItems</key>
