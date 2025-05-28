@@ -59,6 +59,73 @@ Thumbs.db
 *.local
 .cache/
 
+# Capacitor iOS関連
+ios/App/Pods/
+ios/App/Podfile.lock
+ios/App/build/
+ios/App/DerivedData/
+ios/App/*.xcuserdatad/
+ios/App/*.ipa
+ios/App/*.xcarchive
+ios/App/.DS_Store
+ios/App/App.xcworkspace/xcuserdata/
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Capacitor Android関連
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/*.apk
+android/*.aab
+android/app/release/
+android/app/debug/
+android/.idea/
+android/captures/
+
+# Capacitor一般
+.capacitor/
+capacitor.config.ts.backup
+
+# Xcode関連
+*.xcuserstate
+*.xcuserdatad/
+**/xcshareddata/
+project.xcworkspace/
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Android Studio関連
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.externalNativeBuild
+.cxx
+
+# AdMob関連機密情報
+admob-config.json
+google-services.json
+GoogleService-Info.plist
+
 # 空のプレースホルダー画像
 /public/logo192.png
 /public/logo512.png

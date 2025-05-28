@@ -4,9 +4,9 @@
   "private": true,
   "dependencies": {
     "@capacitor-community/admob": "^7.0.3",
-    "@capacitor/android": "^5.0.0",
-    "@capacitor/core": "^5.0.0",
-    "@capacitor/ios": "^5.0.0",
+    "@capacitor/android": "^7.2.0",
+    "@capacitor/core": "^7.2.0",
+    "@capacitor/ios": "^7.2.0",
     "@chakra-ui/react": "^2.8.0",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
@@ -63,7 +63,7 @@
     ]
   },
   "devDependencies": {
-    "@capacitor/cli": "^5.0.0",
+    "@capacitor/cli": "^7.2.0",
     "@types/uuid": "^9.0.2"
   }
 }
