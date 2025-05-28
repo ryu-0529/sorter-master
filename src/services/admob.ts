@@ -31,47 +31,155 @@ export class AdMobService {
   }
 
   /**
-   * AdMobを初期化（一時的に無効化）
+   * AdMobを初期化
    */
   public async initialize(): Promise<void> {
-    console.log('AdMob: 一時的に無効化中');
-    this.isInitialized = true;
+    try {
+      if (!Capacitor.isNativePlatform()) {
+        console.log('AdMob: Web環境のため初期化をスキップ');
+        return;
+      }
+
+      if (this.isInitialized) {
+        console.log('AdMob: 既に初期化済み');
+        return;
+      }
+
+      const initOptions: AdMobInitializationOptions = {
+        testingDevices: ['YOUR_DEVICE_ID'], // テストデバイスIDを追加
+        initializeForTesting: process.env.NODE_ENV === 'development'
+      };
+
+      await AdMob.initialize(initOptions);
+
+      this.isInitialized = true;
+      console.log('AdMob初期化完了');
+
+      // インターステイシャル広告を事前にロード
+      await this.preloadInterstitialAd();
+    } catch (error) {
+      console.error('AdMob初期化エラー:', error);
+    }
   }
 
   /**
-   * バナー広告を表示（一時的に無効化）
+   * バナー広告を表示
    */
   public async showBannerAd(): Promise<void> {
-    console.log('AdMob: バナー広告表示（一時的に無効化中）');
+    try {
+      if (!Capacitor.isNativePlatform()) {
+        console.log('AdMob: Web環境のためバナー広告をスキップ');
+        return;
+      }
+
+      if (!this.isInitialized) {
+        await this.initialize();
+      }
+
+      const options: BannerAdOptions = {
+        adId: this.getBannerAdId(),
+        adSize: BannerAdSize.BANNER,
+        position: BannerAdPosition.BOTTOM_CENTER,
+        margin: 0,
+        isTesting: process.env.NODE_ENV === 'development'
+      };
+
+      await AdMob.showBanner(options);
+      console.log('バナー広告表示完了');
+    } catch (error) {
+      console.error('バナー広告表示エラー:', error);
+    }
   }
 
   /**
-   * バナー広告を非表示（一時的に無効化）
+   * バナー広告を非表示
    */
   public async hideBannerAd(): Promise<void> {
-    console.log('AdMob: バナー広告非表示（一時的に無効化中）');
+    try {
+      if (!Capacitor.isNativePlatform()) {
+        return;
+      }
+
+      await AdMob.hideBanner();
+      console.log('バナー広告非表示完了');
+    } catch (error) {
+      console.error('バナー広告非表示エラー:', error);
+    }
   }
 
   /**
-   * インターステイシャル広告を事前ロード（一時的に無効化）
+   * インターステイシャル広告を事前ロード
    */
   private async preloadInterstitialAd(): Promise<void> {
-    console.log('AdMob: インターステイシャル広告ロード（一時的に無効化中）');
-    this.interstitialAdLoaded = true;
+    try {
+      if (!Capacitor.isNativePlatform()) {
+        return;
+      }
+
+      const options = {
+        adId: this.getInterstitialAdId(),
+        isTesting: process.env.NODE_ENV === 'development'
+      };
+
+      await AdMob.prepareInterstitial(options);
+      this.interstitialAdLoaded = true;
+      console.log('インターステイシャル広告ロード完了');
+    } catch (error) {
+      console.error('インターステイシャル広告ロードエラー:', error);
+      this.interstitialAdLoaded = false;
+    }
   }
 
   /**
-   * インターステイシャル広告を表示（一時的に無効化）
+   * インターステイシャル広告を表示
    */
   public async showInterstitialAd(): Promise<void> {
-    console.log('AdMob: インターステイシャル広告表示（一時的に無効化中）');
+    try {
+      if (!Capacitor.isNativePlatform()) {
+        console.log('AdMob: Web環境のためインターステイシャル広告をスキップ');
+        return;
+      }
+
+      if (!this.isInitialized) {
+        await this.initialize();
+      }
+
+      if (!this.interstitialAdLoaded) {
+        console.log('インターステイシャル広告がロードされていません。ロード中...');
+        await this.preloadInterstitialAd();
+        
+        // ロードが完了するまで少し待機
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      if (this.interstitialAdLoaded) {
+        await AdMob.showInterstitial();
+        console.log('インターステイシャル広告表示完了');
+        
+        // 次の広告を事前にロード
+        this.interstitialAdLoaded = false;
+        setTimeout(() => this.preloadInterstitialAd(), 2000);
+      } else {
+        console.log('インターステイシャル広告のロードに失敗しました');
+      }
+    } catch (error) {
+      console.error('インターステイシャル広告表示エラー:', error);
+      this.interstitialAdLoaded = false;
+      // エラー時も次の広告をロード
+      setTimeout(() => this.preloadInterstitialAd(), 5000);
+    }
   }
 
   /**
    * 広告収益の追跡（Firebaseアナリティクスと連携）
    */
   public async trackAdRevenue(value: number, currency: string = 'USD'): Promise<void> {
-    console.log(`広告収益追跡（一時的に無効化中）: ${value} ${currency}`);
+    try {
+      // ここでFirebaseアナリティクスに収益データを送信
+      console.log(`広告収益追跡: ${value} ${currency}`);
+    } catch (error) {
+      console.error('広告収益追跡エラー:', error);
+    }
   }
 
   /**
@@ -92,8 +200,14 @@ export class AdMobService {
    * 同意管理（GDPR対応）
    */
   public async requestConsent(): Promise<boolean> {
-    console.log('AdMob: 同意管理（一時的に無効化中）');
-    return true;
+    try {
+      // ここで同意管理を実装
+      // 実際の実装では、ユーザーの地域に基づいて同意を求める
+      return true;
+    } catch (error) {
+      console.error('同意管理エラー:', error);
+      return false;
+    }
   }
 
   /**
