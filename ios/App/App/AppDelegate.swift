@@ -7,7 +7,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Create window
+        window = UIWindow(frame: UIScreen.main.bounds)
+        
+        // Create and configure the bridge view controller
+        let bridgeViewController = CAPBridgeViewController()
+        
+        // Set as root view controller
+        window?.rootViewController = bridgeViewController
+        window?.makeKeyAndVisible()
+        
         return true
     }
 

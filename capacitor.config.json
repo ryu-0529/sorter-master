@@ -1,18 +1,35 @@
 {
-  "appId": "com.sortermaster.app",
-  "appName": "仕分け職人",
-  "webDir": "build",
-  "plugins": {
-    "SplashScreen": {
-      "launchShowDuration": 0,
-      "launchAutoHide": true,
-      "backgroundColor": "#0080ff",
-      "showSpinner": false,
-      "splashFullScreen": false,
-      "splashImmersive": false
-    }
-  },
-  "server": {
-    "androidScheme": "https"
-  }
+	"appId": "com.sortermaster.app",
+	"appName": "仕分け職人",
+	"webDir": "build",
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 0,
+			"launchAutoHide": true,
+			"backgroundColor": "#0080ff",
+			"showSpinner": false,
+			"splashFullScreen": false,
+			"splashImmersive": false
+		}
+	},
+	"server": {
+		"androidScheme": "https",
+		"iosScheme": "capacitor",
+		"errorPath": "/index.html",
+		"allowNavigation": [
+			"capacitor://localhost",
+			"https://localhost"
+		]
+	},
+	"ios": {
+		"contentInset": "automatic",
+		"scrollEnabled": true,
+		"backgroundColor": "#0080ff",
+		"allowsLinkPreview": false,
+		"webViewConfiguration": {
+			"allowsInlineMediaPlayback": true,
+			"mediaTypesRequiringUserActionForPlayback": [],
+			"suppressesIncrementalRendering": false
+		}
+	}
 }

@@ -96,7 +96,7 @@ const ResultPage: React.FC = () => {
   const handleRetry = () => {
     // 直接ゲームを開始する
     startSinglePlayerGame();
-    navigate('/play');
+    navigate('/game-play');
   };
   
   // ゲームモード選択へ

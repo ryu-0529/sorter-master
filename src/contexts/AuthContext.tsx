@@ -9,7 +9,8 @@ import {
   signOut,
   onAuthStateChanged,
   linkWithCredential,
-  EmailAuthProvider
+  EmailAuthProvider,
+  updateProfile
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, firestore } from '../services/firebase';
@@ -92,6 +93,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         photoURL: user.photoURL,
         createdAt: new Date().toISOString()
       });
+    } else {
+      // 既存ユーザーでdisplayNameがない場合は更新
+      const existingData = userSnapshot.data();
+      if (!existingData.displayName && user.displayName) {
+        await setDoc(userRef, {
+          displayName: user.displayName,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
     }
   };
 
@@ -126,6 +136,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setError(null);
       const result = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Firebase Authのプロフィールを更新
+      if (result.user) {
+        await updateProfile(result.user, {
+          displayName: displayName
+        });
+      }
+      
       const user = await createUserObject(result.user);
       if (user) {
         user.displayName = displayName;
@@ -172,6 +190,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const credential = EmailAuthProvider.credential(email, password);
         await linkWithCredential(auth.currentUser, credential);
         
+        // Firebase Authのプロフィールを更新
+        await updateProfile(auth.currentUser, {
+          displayName: displayName
+        });
+        
         // ユーザー情報を更新
         const userRef = doc(firestore, 'users', auth.currentUser.uid);
         await setDoc(userRef, {
@@ -181,6 +204,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           photoURL: null,
           updatedAt: new Date().toISOString()
         }, { merge: true });
+        
+        // 現在のユーザー情報を更新
+        const updatedUser = await createUserObject(auth.currentUser);
+        setCurrentUser(updatedUser);
       }
     } catch (err) {
       setError((err as Error).message);
@@ -204,16 +231,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // 認証状態の監視
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      const user = await createUserObject(firebaseUser);
-      if (user) {
-        await saveUserToFirestore(user);
-      }
-      setCurrentUser(user);
+    console.log('AuthContext: 認証状態の監視を開始');
+    
+    // タイムアウトを設定（5秒後にローディング解除）
+    const timeout = setTimeout(() => {
+      console.log('AuthContext: 認証タイムアウト - ローディング解除');
       setLoading(false);
+    }, 5000);
+    
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('AuthContext: 認証状態変更検出', firebaseUser ? 'ユーザーあり' : 'ユーザーなし');
+      
+      try {
+        const user = await createUserObject(firebaseUser);
+        if (user) {
+          await saveUserToFirestore(user);
+        }
+        setCurrentUser(user);
+        setLoading(false);
+        clearTimeout(timeout); // 認証成功時はタイムアウトをクリア
+      } catch (error) {
+        console.error('AuthContext: ユーザー処理エラー', error);
+        setLoading(false);
+        clearTimeout(timeout);
+      }
+    }, (error) => {
+      console.error('AuthContext: 認証エラー', error);
+      setLoading(false);
+      clearTimeout(timeout);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const value = {
@@ -231,7 +282,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

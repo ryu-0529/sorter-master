@@ -1,25 +1,46 @@
 // /src/services/firebase.ts
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth, indexedDBLocalPersistence, Auth } from 'firebase/auth';
 import { getFirestore, collection, query, where, orderBy, limit, getDocs, startAfter, doc, setDoc, increment, serverTimestamp, writeBatch, deleteDoc, DocumentSnapshot, getCountFromServer, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
+import { Capacitor } from '@capacitor/core';
 
 // 環境変数からFirebase設定を読み込み
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "AIzaSyDaIbIkTuh_GACGxuIxuYf6vC_pNH7UB2k",
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "sorter-master.firebaseapp.com",
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "sorter-master",
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "sorter-master.firebasestorage.app",
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "63283497482",
+  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:63283497482:ios:10a243cd83132b04856df3",
+  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL || "https://sorter-master-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
+
+// デバッグ用ログ
+console.log('Firebase設定:', {
+  apiKey: firebaseConfig.apiKey ? '設定済み' : '未設定',
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+  appId: firebaseConfig.appId ? '設定済み' : '未設定'
+});
 
 // Firebaseアプリを初期化
 const app = initializeApp(firebaseConfig);
 
+// Capacitor環境に応じて適切な認証インスタンスを作成
+let auth: Auth;
+if (Capacitor.isNativePlatform()) {
+  console.log('Capacitorネイティブ環境で実行中 - indexedDBLocalPersistenceを使用');
+  auth = initializeAuth(app, {
+    persistence: indexedDBLocalPersistence
+  });
+} else {
+  console.log('Web環境で実行中 - 通常のgetAuth()を使用');
+  auth = getAuth(app);
+}
+
 // サービスインスタンスをエクスポート
-export const auth = getAuth(app);
+export { auth };
 export const firestore = getFirestore(app);
 export const database = getDatabase(app);
 

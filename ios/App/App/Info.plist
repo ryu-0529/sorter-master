@@ -242,5 +242,18 @@
 	<!-- iOS 14+ User Tracking Description -->
 	<key>NSUserTrackingUsageDescription</key>
 	<string>この識別子は、あなたにパーソナライズされた広告を配信するために使用されます。</string>
+	
+	<!-- WebView Debug Configuration -->
+	<key>WKWebViewInspectable</key>
+	<true/>
+	
+	<!-- App Transport Security -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

@@ -34,6 +34,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:capacitor": "PUBLIC_URL=. react-scripts build && npm run remove-sw",
+    "remove-sw": "rm -f build/service-worker.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "deploy": "npm run build && firebase deploy",
@@ -41,8 +43,8 @@
     "cap:sync": "npx cap sync",
     "cap:open:ios": "npx cap open ios",
     "cap:open:android": "npx cap open android",
-    "cap:build:ios": "npm run build && npx cap sync ios",
-    "cap:build:android": "npm run build && npx cap sync android"
+    "cap:build:ios": "npm run build:capacitor && npx cap sync ios",
+    "cap:build:android": "npm run build:capacitor && npx cap sync android"
   },
   "eslintConfig": {
     "extends": [

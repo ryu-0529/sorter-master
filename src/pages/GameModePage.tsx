@@ -45,7 +45,7 @@ const GameModePage: React.FC = () => {
     await showInterstitialAd();
     
     startSinglePlayerGame();
-    navigate('/play');
+    navigate('/game-play');
   };
   
   // 通信対戦（マッチメイキング）開始
@@ -59,7 +59,7 @@ const GameModePage: React.FC = () => {
         duration: 3000,
         isClosable: true,
       });
-      navigate('/play');
+      navigate('/game-play');
     } catch (error) {
       toast({
         title: 'エラー',
@@ -82,7 +82,7 @@ const GameModePage: React.FC = () => {
         duration: 3000,
         isClosable: true,
       });
-      navigate('/play');
+      navigate('/game-play');
     } catch (error) {
       toast({
         title: 'エラー',
@@ -98,7 +98,7 @@ const GameModePage: React.FC = () => {
   const handleStartTutorial = () => {
     // インタラクティブなチュートリアルを開始し、ゲームプレイ画面に遷移
     startInteractiveTutorial();
-    navigate('/play');
+    navigate('/game-play');
   };
   
   // ホーム画面へ戻る

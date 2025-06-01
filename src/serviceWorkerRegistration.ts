@@ -1,5 +1,11 @@
 // このコードはCreate React Appのサービスワーカーボイラープレートをベースにしています
 
+// Capacitor環境でのService Worker無効化
+const isCapacitor = () => {
+  return typeof window !== 'undefined' && 
+         (window as any).Capacitor !== undefined;
+};
+
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
     window.location.hostname === '[::1]' ||
@@ -12,6 +18,12 @@ type Config = {
 };
 
 export function register(config?: Config) {
+  // Capacitor環境ではService Workerを無効化
+  if (isCapacitor()) {
+    console.log('Capacitor環境のため、Service Workerの登録をスキップします');
+    return;
+  }
+
   if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
     // PUBLIC_URLがnullまたはundefinedの場合に空文字列をデフォルト値として使用
     const publicUrl = new URL(process.env.PUBLIC_URL || '', window.location.href);

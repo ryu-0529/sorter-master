@@ -69,7 +69,7 @@ const JoinRoomPage: React.FC = () => {
       });
       
       // ゲームプレイ画面に遷移
-      navigate('/play');
+      navigate('/game-play');
     } catch (error) {
       toast({
         title: 'エラー',

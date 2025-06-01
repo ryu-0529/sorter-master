@@ -215,14 +215,14 @@ const ProfilePage: React.FC = () => {
           <VStack spacing={6}>
             <Avatar 
               size="2xl" 
-              name={currentUser?.displayName || 'ゲスト'} 
+              name={currentUser?.displayName || currentUser?.email?.split('@')[0] || 'ゲスト'} 
               src={currentUser?.photoURL || undefined} 
               bg="brand.500"
             />
             
             <VStack spacing={2}>
               <Heading as="h2" size="lg">
-                {currentUser?.displayName || `ゲスト-${currentUser?.uid.substring(0, 5)}`}
+                {currentUser?.displayName || currentUser?.email?.split('@')[0] || `ゲスト-${currentUser?.uid.substring(0, 5)}`}
               </Heading>
               
               <HStack>

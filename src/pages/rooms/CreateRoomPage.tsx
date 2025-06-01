@@ -157,7 +157,7 @@ const CreateRoomPage: React.FC = () => {
   
   // ゲーム開始処理
   const handleStartGame = () => {
-    navigate('/play');
+    navigate('/game-play');
   };
   
   // ゲームモード選択画面に戻る
