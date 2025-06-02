@@ -22,8 +22,8 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
     const isVertical = direction === 'left' || direction === 'right';
     
     return {
-      width: isVertical ? '40px' : '240px', // 上下（セダン、クロスカントリー）の幅を240pxに拡大
-      height: isVertical ? '400px' : '40px',
+      width: isVertical ? '40px' : '200px', // 上下方向の幅を200pxに調整
+      height: isVertical ? '300px' : (direction === 'down' ? '40px' : '35px'), // 下方向は40px（30pxから増加）、その他上下方向は35px、左右方向は300px
       writingMode: isVertical ? 'vertical-rl' : 'horizontal-tb',
       textOrientation: isVertical ? 'upright' : 'mixed',
     };
@@ -105,7 +105,7 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
       flexDirection={direction === "down" ? "column-reverse" : "column"} 
       justifyContent="center"
       alignItems="center"
-      m={1}
+      m={direction === 'down' ? 0 : direction === 'up' ? 0.5 : 1}
       position="relative"
       borderWidth="2px" // 境界線を追加
       borderColor="white" // 白い境界線
@@ -126,7 +126,7 @@ const DirectionIndicator: React.FC<DirectionIndicatorProps> = ({ direction, cate
       <Text 
         fontSize="sm"
         isTruncated 
-        maxW={direction === 'left' || direction === 'right' ? "40px" : "200px"}
+        maxW={direction === 'left' || direction === 'right' ? "40px" : "180px"}
         fontWeight="bold"
         p={1}
         sx={{

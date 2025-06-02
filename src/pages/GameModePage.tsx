@@ -107,15 +107,16 @@ const GameModePage: React.FC = () => {
   };
   
   return (
-    <Container maxW="container.xl" py={8}>
-      {/* チュートリアルオーバーレイ */}
-      <TutorialOverlay 
-        isOpen={isTutorialOpen} 
-        onClose={closeTutorial} 
-        onFinish={finishTutorial} 
-      />
-      
-      <VStack spacing={8} align="stretch">
+    <Box minH="100vh" overflow="auto">
+      <Container maxW="container.xl" py={8}>
+        {/* チュートリアルオーバーレイ */}
+        <TutorialOverlay 
+          isOpen={isTutorialOpen} 
+          onClose={closeTutorial} 
+          onFinish={finishTutorial} 
+        />
+        
+        <VStack spacing={8} align="stretch">
         {/* ヘッダー */}
         <Flex justifyContent="space-between" alignItems="center">
           <Heading as="h1" size="xl" color="brand.500">ゲームモード選択</Heading>
@@ -230,11 +231,12 @@ const GameModePage: React.FC = () => {
         <Box pb={16}>
           {/* バナー広告エリア分のスペースを確保 */}
         </Box>
-      </VStack>
-      
-      {/* バナー広告 */}
-      <BannerAdSpace />
-    </Container>
+        </VStack>
+        
+        {/* バナー広告 */}
+        <BannerAdSpace />
+      </Container>
+    </Box>
   );
 };
 

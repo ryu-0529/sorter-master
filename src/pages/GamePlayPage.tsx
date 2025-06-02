@@ -531,7 +531,7 @@ const GamePlayPage: React.FC = () => {
       
       {/* メインのゲーム画面 */}
       <Box 
-        h="calc(100vh - 150px)"
+        h="calc(100vh - 140px)" // ヘッダー分を除いた高さを調整し、下部のマージンを確保
         position="relative"
         overflow="visible" // overflow: visibleに変更して、スワイプアニメーションがはみ出すのを許可
         bg="gray.800" // アスファルト色を少し明るく調整
@@ -540,6 +540,7 @@ const GamePlayPage: React.FC = () => {
         justifyContent="center" // 中央配置に変更
         alignItems="center"
         px={2}
+        py={2} // 上下のパディングを追加
         // framer-motionで直接ドラッグ処理をするため、タッチイベントはほぼ不要
         onTouchStart={filteredDragHandlers.onTouchStart}
         onTouchMove={filteredDragHandlers.onTouchMove}
@@ -667,12 +668,13 @@ const GamePlayPage: React.FC = () => {
             <Flex
               direction="column"
               alignItems="center"
-              justifyContent="space-between"
+              justifyContent="flex-start" // space-betweenからflex-startに変更
               w="100%"
               h="100%"
               position="relative"
-              py={4}
+              py={3} // 上下のパディングを増加
               px={2}
+              gap={4} // 要素間のギャップを追加
             >
               {/* 上方向のカテゴリ */}
               <Box zIndex={5}>
@@ -689,7 +691,7 @@ const GamePlayPage: React.FC = () => {
               </Box>
               
               {/* メイン部分: 左右のカテゴリと中央の車画像 */}
-              <Flex alignItems="center" justifyContent="center" w="90%" flex="1" zIndex={5} mx="auto">
+              <Flex alignItems="center" justifyContent="center" w="90%" zIndex={5} mx="auto" flex={1} maxH="60%">
                 {/* 左方向のカテゴリ */}
                 <Box pl={1}>
                   {Object.entries(currentGame.directionMap)

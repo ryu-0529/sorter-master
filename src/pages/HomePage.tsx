@@ -75,7 +75,7 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <Box minH="100vh" bg="gray.50">
+    <Box minH="100vh" bg="gray.50" overflow="auto">
       {/* ヘッダー */}
       <Box bg="white" shadow="sm">
         <Container maxW="lg" py={4}>
@@ -213,6 +213,13 @@ const HomePage: React.FC = () => {
               </CardBody>
             </Card>
           </Grid>
+          
+          {/* 追加のスペース（スクロール確認用） */}
+          <Box pb={20}>
+            <Text textAlign="center" color="gray.400" fontSize="sm">
+              画面をスクロールしてコンテンツを確認できます
+            </Text>
+          </Box>
         </VStack>
       </Container>
     </Box>
