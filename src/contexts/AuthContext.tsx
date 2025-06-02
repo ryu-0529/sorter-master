@@ -125,9 +125,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setError(null);
       await signInWithEmailAndPassword(auth, email, password);
+      // ログイン成功時は onAuthStateChanged で自動的に currentUser が更新される
     } catch (err) {
       setError((err as Error).message);
       console.error("メールログインエラー:", err);
+      throw err; // エラーを再度throwして、呼び出し元でキャッチできるようにする
     }
   };
 
@@ -160,6 +162,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setError(null);
       const provider = new GoogleAuthProvider();
+      
+      // Capacitor環境での設定を追加
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
       const result = await signInWithPopup(auth, provider);
       const user = await createUserObject(result.user);
       if (user) {
@@ -168,6 +176,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (err) {
       setError((err as Error).message);
       console.error("Googleログインエラー:", err);
+      throw err; // エラーを再度throwして、呼び出し元でキャッチできるようにする
     }
   };
 

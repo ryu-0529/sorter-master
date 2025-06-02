@@ -18,7 +18,10 @@
 		"errorPath": "/index.html",
 		"allowNavigation": [
 			"capacitor://localhost",
-			"https://localhost"
+			"https://localhost",
+			"https://sorter-master.firebaseapp.com",
+			"https://accounts.google.com",
+			"https://firebase.google.com"
 		]
 	},
 	"ios": {

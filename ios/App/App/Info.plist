@@ -20,6 +20,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-1982702464173576~8524038995</string>
 	<key>LSRequiresIPhoneOS</key>

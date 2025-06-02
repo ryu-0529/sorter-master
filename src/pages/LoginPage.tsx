@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Button, 
@@ -25,7 +25,7 @@ import { useAuth } from '../contexts/AuthContext';
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  const { loginWithEmail, loginWithGoogle, signInAsGuest } = useAuth();
+  const { currentUser, loading, loginWithEmail, loginWithGoogle, signInAsGuest } = useAuth();
   
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -34,6 +34,14 @@ const LoginPage: React.FC = () => {
   
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  
+  // 認証状態を監視して自動的にホームページに遷移
+  useEffect(() => {
+    if (!loading && currentUser) {
+      console.log('LoginPage: ユーザーがログイン済み、ホームページに遷移');
+      navigate('/home');
+    }
+  }, [currentUser, loading, navigate]);
   
   // メールでログイン
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -56,10 +64,10 @@ const LoginPage: React.FC = () => {
       toast({
         title: 'ログイン成功',
         status: 'success',
-        duration: 3000,
+        duration: 2000,
         isClosable: true,
       });
-      navigate('/home');
+      // navigate('/home') は useEffect で自動的に処理される
     } catch (error) {
       toast({
         title: 'ログインエラー',
@@ -81,10 +89,10 @@ const LoginPage: React.FC = () => {
       toast({
         title: 'ログイン成功',
         status: 'success',
-        duration: 3000,
+        duration: 2000,
         isClosable: true,
       });
-      navigate('/home');
+      // navigate('/home') は useEffect で自動的に処理される
     } catch (error) {
       toast({
         title: 'ログインエラー',
@@ -107,10 +115,10 @@ const LoginPage: React.FC = () => {
         title: 'ゲストログイン成功',
         description: '後からアカウント登録も可能です',
         status: 'success',
-        duration: 3000,
+        duration: 2000,
         isClosable: true,
       });
-      navigate('/home');
+      // navigate('/home') は useEffect で自動的に処理される
     } catch (error) {
       toast({
         title: 'ログインエラー',

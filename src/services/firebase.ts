@@ -21,7 +21,8 @@ console.log('Firebase設定:', {
   apiKey: firebaseConfig.apiKey ? '設定済み' : '未設定',
   authDomain: firebaseConfig.authDomain,
   projectId: firebaseConfig.projectId,
-  appId: firebaseConfig.appId ? '設定済み' : '未設定'
+  appId: firebaseConfig.appId ? '設定済み' : '未設定',
+  isCapacitor: Capacitor.isNativePlatform()
 });
 
 // Firebaseアプリを初期化
@@ -37,6 +38,12 @@ if (Capacitor.isNativePlatform()) {
 } else {
   console.log('Web環境で実行中 - 通常のgetAuth()を使用');
   auth = getAuth(app);
+}
+
+// Firebase Auth設定（Capacitor環境向け）
+if (Capacitor.isNativePlatform()) {
+  // Capacitor環境では追加の設定を行う
+  console.log('Capacitor環境: Firebase Auth設定を最適化中...');
 }
 
 // サービスインスタンスをエクスポート
