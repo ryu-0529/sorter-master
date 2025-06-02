@@ -20,10 +20,9 @@ import {
   Divider,
   Grid,
   Icon,
-  useToast,
-  Badge
+  useToast
 } from '@chakra-ui/react';
-import { FaCar, FaGamepad, FaTrophy, FaSignOutAlt, FaCog, FaUser } from 'react-icons/fa';
+import { FaCar, FaSignOutAlt, FaCog, FaUser } from 'react-icons/fa';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -39,16 +38,6 @@ const HomePage: React.FC = () => {
 
   const handleStartCarSortingGame = () => {
     navigate('/modes');
-  };
-
-  const handleComingSoon = () => {
-    toast({
-      title: 'Coming Soon!',
-      description: 'このゲームは現在開発中です',
-      status: 'info',
-      duration: 3000,
-      isClosable: true,
-    });
   };
 
   const handleProfile = () => {
@@ -75,9 +64,9 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <Box minH="100vh" bg="gray.50" overflow="auto">
-      {/* ヘッダー */}
-      <Box bg="white" shadow="sm">
+    <Box height="100vh" display="flex" flexDirection="column" bg="gray.50">
+      {/* ヘッダー - 固定 */}
+      <Box bg="white" shadow="sm" flexShrink={0}>
         <Container maxW="lg" py={4}>
           <HStack justify="space-between">
             <HStack spacing={4}>
@@ -117,111 +106,52 @@ const HomePage: React.FC = () => {
         </Container>
       </Box>
 
-      {/* メインコンテンツ */}
-      <Container maxW="lg" py={8}>
-        <VStack spacing={8}>
-          {/* タイトル */}
-          <VStack spacing={2}>
-            <Heading as="h1" size="2xl" color="brand.500">
-              ゲーム一覧
-            </Heading>
-            <Text color="gray.600" fontSize="lg">
-              プレイしたいゲームを選択してください
-            </Text>
+      {/* メインコンテンツ - スクロール可能エリア */}
+      <Box flex="1" overflow="auto">
+        <Container maxW="lg" py={8}>
+          <VStack spacing={8}>
+            {/* タイトル */}
+            <VStack spacing={2}>
+              <Heading as="h1" size="2xl" color="brand.500">
+                ゲーム一覧
+              </Heading>
+              <Text color="gray.600" fontSize="lg">
+                プレイしたいゲームを選択してください
+              </Text>
+            </VStack>
+
+            {/* ゲームメニュー */}
+            <Grid
+              templateColumns="repeat(auto-fit, minmax(280px, 1fr))"
+              gap={6}
+              w="full"
+            >
+              {/* 車種仕分けゲーム */}
+              <Card
+                cursor="pointer"
+                onClick={handleStartCarSortingGame}
+                _hover={{ transform: 'translateY(-4px)', shadow: 'lg' }}
+                transition="all 0.2s"
+                position="relative"
+                overflow="hidden"
+              >
+                <CardBody>
+                  <VStack spacing={4}>
+                    <Icon as={FaCar} boxSize={12} color="brand.500" />
+                    <Heading size="md">車種仕分けゲーム</Heading>
+                    <Text color="gray.600" textAlign="center">
+                      車種を素早く正確に分類しよう！
+                    </Text>
+                    <Button colorScheme="blue" size="lg" w="full">
+                      ゲームを始める
+                    </Button>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </Grid>
           </VStack>
-
-          {/* ゲームメニュー */}
-          <Grid
-            templateColumns="repeat(auto-fit, minmax(280px, 1fr))"
-            gap={6}
-            w="full"
-          >
-            {/* 車種仕分けゲーム */}
-            <Card
-              cursor="pointer"
-              onClick={handleStartCarSortingGame}
-              _hover={{ transform: 'translateY(-4px)', shadow: 'lg' }}
-              transition="all 0.2s"
-              position="relative"
-              overflow="hidden"
-            >
-              <CardBody>
-                <VStack spacing={4}>
-                  <Icon as={FaCar} boxSize={12} color="brand.500" />
-                  <Heading size="md">車種仕分けゲーム</Heading>
-                  <Text color="gray.600" textAlign="center">
-                    車種を素早く正確に分類しよう！
-                  </Text>
-                  <Button colorScheme="blue" size="lg" w="full">
-                    ゲームを始める
-                  </Button>
-                </VStack>
-              </CardBody>
-            </Card>
-
-            {/* 他のゲーム（Coming Soon） */}
-            <Card
-              cursor="pointer"
-              onClick={handleComingSoon}
-              _hover={{ transform: 'translateY(-4px)', shadow: 'lg' }}
-              transition="all 0.2s"
-              position="relative"
-              overflow="hidden"
-              opacity={0.7}
-            >
-              <Box position="absolute" top={2} right={2}>
-                <Badge colorScheme="orange">Coming Soon</Badge>
-              </Box>
-              <CardBody>
-                <VStack spacing={4}>
-                  <Icon as={FaGamepad} boxSize={12} color="gray.400" />
-                  <Heading size="md" color="gray.500">新しいゲーム</Heading>
-                  <Text color="gray.400" textAlign="center">
-                    近日公開予定
-                  </Text>
-                  <Button colorScheme="gray" size="lg" w="full" isDisabled>
-                    準備中
-                  </Button>
-                </VStack>
-              </CardBody>
-            </Card>
-
-            {/* 他のゲーム（Coming Soon） */}
-            <Card
-              cursor="pointer"
-              onClick={handleComingSoon}
-              _hover={{ transform: 'translateY(-4px)', shadow: 'lg' }}
-              transition="all 0.2s"
-              position="relative"
-              overflow="hidden"
-              opacity={0.7}
-            >
-              <Box position="absolute" top={2} right={2}>
-                <Badge colorScheme="orange">Coming Soon</Badge>
-              </Box>
-              <CardBody>
-                <VStack spacing={4}>
-                  <Icon as={FaTrophy} boxSize={12} color="gray.400" />
-                  <Heading size="md" color="gray.500">新しいゲーム</Heading>
-                  <Text color="gray.400" textAlign="center">
-                    近日公開予定
-                  </Text>
-                  <Button colorScheme="gray" size="lg" w="full" isDisabled>
-                    準備中
-                  </Button>
-                </VStack>
-              </CardBody>
-            </Card>
-          </Grid>
-          
-          {/* 追加のスペース（スクロール確認用） */}
-          <Box pb={20}>
-            <Text textAlign="center" color="gray.400" fontSize="sm">
-              画面をスクロールしてコンテンツを確認できます
-            </Text>
-          </Box>
-        </VStack>
-      </Container>
+        </Container>
+      </Box>
     </Box>
   );
 };

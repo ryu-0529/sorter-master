@@ -9,6 +9,7 @@ import {
   VStack, 
   HStack,
   Icon,
+  Grid,
   useColorModeValue,
   useToast 
 } from '@chakra-ui/react';
@@ -107,135 +108,141 @@ const GameModePage: React.FC = () => {
   };
   
   return (
-    <Box minH="100vh" overflow="auto">
-      <Container maxW="container.xl" py={8}>
-        {/* チュートリアルオーバーレイ */}
-        <TutorialOverlay 
-          isOpen={isTutorialOpen} 
-          onClose={closeTutorial} 
-          onFinish={finishTutorial} 
-        />
-        
-        <VStack spacing={8} align="stretch">
-        {/* ヘッダー */}
-        <Flex justifyContent="space-between" alignItems="center">
-          <Heading as="h1" size="xl" color="brand.500">ゲームモード選択</Heading>
-          <Button 
-            leftIcon={<Icon as={FaArrowLeft} />} 
-            variant="ghost" 
-            onClick={handleBackToHome}
-          >
-            戻る
-          </Button>
-        </Flex>
-        
-        {/* ゲームモード一覧 */}
-        <VStack spacing={4}>
-          {/* ランキング戦 */}
-          <Box 
-            p={6} 
-            bg={bgColor} 
-            borderRadius="lg" 
-            boxShadow="md"
-            border="1px" 
-            borderColor={borderColor}
-            w="full"
-          >
-            <HStack spacing={4} alignItems="flex-start">
-              <Icon as={FaTrophy} boxSize={10} color="yellow.500" />
-              <VStack align="start" spacing={3} flex={1}>
-                <Heading as="h2" size="md">ランキング戦（1人プレイ）</Heading>
-                <Text>
-                  制限時間内にできるだけ多くの車種を正確に分類しよう！
-                  あなたのスコアはランキングに記録されます。
-                </Text>
-                <Button 
-                  colorScheme="blue" 
-                  onClick={handleStartSinglePlayer}
-                >
-                  スタート
-                </Button>
-              </VStack>
-            </HStack>
-          </Box>
+    <Box height="100vh" display="flex" flexDirection="column" bg="gray.50">
+      {/* ヘッダー - 固定 */}
+      <Box bg="white" shadow="sm" flexShrink={0}>
+        <Container maxW="container.xl" py={4}>
+          <Flex justifyContent="space-between" alignItems="center">
+            <Heading as="h1" size="xl" color="brand.500">ゲームモード選択</Heading>
+            <Button 
+              leftIcon={<Icon as={FaArrowLeft} />} 
+              variant="ghost" 
+              onClick={handleBackToHome}
+            >
+              戻る
+            </Button>
+          </Flex>
+        </Container>
+      </Box>
+
+      {/* メインコンテンツ - スクロール可能エリア */}
+      <Box flex="1" overflow="auto">
+        <Container maxW="container.xl" py={8}>
+          {/* チュートリアルオーバーレイ */}
+          <TutorialOverlay 
+            isOpen={isTutorialOpen} 
+            onClose={closeTutorial} 
+            onFinish={finishTutorial} 
+          />
           
-          {/* 通信対戦 */}
-          <Box 
-            p={6} 
-            bg={bgColor} 
-            borderRadius="lg" 
-            boxShadow="md"
-            border="1px" 
-            borderColor={borderColor}
-            w="full"
-          >
-            <HStack spacing={4} alignItems="flex-start">
-              <Icon as={FaUsers} boxSize={10} color="green.500" />
-              <VStack align="start" spacing={3} flex={1}>
-                <Heading as="h2" size="md">通信対戦（最大4人）</Heading>
-                <Text>
-                  他のプレイヤーとリアルタイムで対戦！
-                  同じカードセットで正確さとスピードを競い合おう。
-                </Text>
-                <VStack spacing={4} align="flex-start">
-                  <Button 
-                    colorScheme="green" 
-                    onClick={() => navigate('/join-room')}
-                    width="200px"
-                  >
-                    ルームに参加
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    colorScheme="green"
-                    onClick={() => navigate('/create-room')}
-                    width="200px"
-                  >
-                    ルーム作成
-                  </Button>
-                </VStack>
-              </VStack>
-            </HStack>
-          </Box>
-          
-          {/* チュートリアル */}
-          <Box 
-            p={6} 
-            bg={bgColor} 
-            borderRadius="lg" 
-            boxShadow="md"
-            border="1px" 
-            borderColor={borderColor}
-            w="full"
-          >
-            <HStack spacing={4} alignItems="flex-start">
-              <Icon as={FaInfoCircle} boxSize={10} color="purple.500" />
-              <VStack align="start" spacing={3} flex={1}>
-                <Heading as="h2" size="md">チュートリアル</Heading>
-                <Text>
-                  ゲームのルールと遊び方を学ぼう！
-                  初めての方はここからスタートしましょう。
-                </Text>
-                <Button 
-                  colorScheme="purple" 
-                  onClick={handleStartTutorial}
-                >
-                  始める
-                </Button>
-              </VStack>
-            </HStack>
-          </Box>
-        </VStack>
-        
-        {/* バナー広告用スペース */}
-        <Box pb={16}>
-          {/* バナー広告エリア分のスペースを確保 */}
-        </Box>
-        </VStack>
-        
-        {/* バナー広告 */}
-        <BannerAdSpace />
-      </Container>
+          <VStack spacing={8} align="stretch">
+            {/* ゲームモード一覧 */}
+            <VStack spacing={6}>
+              {/* ランキング戦 */}
+              <Box 
+                p={6} 
+                bg={bgColor} 
+                borderRadius="lg" 
+                boxShadow="md"
+                border="1px" 
+                borderColor={borderColor}
+                w="full"
+              >
+                <HStack spacing={4} alignItems="flex-start">
+                  <Icon as={FaTrophy} boxSize={10} color="yellow.500" />
+                  <VStack align="start" spacing={3} flex={1}>
+                    <Heading as="h2" size="md">ランキング戦（1人プレイ）</Heading>
+                    <Text>
+                      制限時間内にできるだけ多くの車種を正確に分類しよう！
+                      あなたのスコアはランキングに記録されます。
+                    </Text>
+                    <Button 
+                      colorScheme="blue" 
+                      onClick={handleStartSinglePlayer}
+                    >
+                      スタート
+                    </Button>
+                  </VStack>
+                </HStack>
+              </Box>
+              
+              {/* 通信対戦 */}
+              <Box 
+                p={6} 
+                bg={bgColor} 
+                borderRadius="lg" 
+                boxShadow="md"
+                border="1px" 
+                borderColor={borderColor}
+                w="full"
+              >
+                <HStack spacing={4} alignItems="flex-start">
+                  <Icon as={FaUsers} boxSize={10} color="green.500" />
+                  <VStack align="start" spacing={3} flex={1}>
+                    <Heading as="h2" size="md">通信対戦（最大4人）</Heading>
+                    <Text>
+                      他のプレイヤーとリアルタイムで対戦！
+                      同じカードセットで正確さとスピードを競い合おう。
+                    </Text>
+                    <VStack spacing={4} align="flex-start">
+                      <Button 
+                        colorScheme="green" 
+                        onClick={() => navigate('/join-room')}
+                        width="200px"
+                      >
+                        ルームに参加
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        colorScheme="green"
+                        onClick={() => navigate('/create-room')}
+                        width="200px"
+                      >
+                        ルーム作成
+                      </Button>
+                    </VStack>
+                  </VStack>
+                </HStack>
+              </Box>
+              
+              {/* チュートリアル */}
+              <Box 
+                p={6} 
+                bg={bgColor} 
+                borderRadius="lg" 
+                boxShadow="md"
+                border="1px" 
+                borderColor={borderColor}
+                w="full"
+              >
+                <HStack spacing={4} alignItems="flex-start">
+                  <Icon as={FaInfoCircle} boxSize={10} color="purple.500" />
+                  <VStack align="start" spacing={3} flex={1}>
+                    <Heading as="h2" size="md">チュートリアル</Heading>
+                    <Text>
+                      ゲームのルールと遊び方を学ぼう！
+                      初めての方はここからスタートしましょう。
+                    </Text>
+                    <Button 
+                      colorScheme="purple" 
+                      onClick={handleStartTutorial}
+                    >
+                      始める
+                    </Button>
+                  </VStack>
+                </HStack>
+              </Box>
+            </VStack>
+
+            
+            {/* バナー広告用スペース */}
+            <Box pb={16}></Box>
+          </VStack>
+        </Container>
+      </Box>
+      
+      {/* バナー広告 */}
+      <BannerAdSpace />
     </Box>
   );
 };
