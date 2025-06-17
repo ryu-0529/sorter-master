@@ -23,10 +23,14 @@ import {
   ModalCloseButton,
   useDisclosure,
   Icon,
-  Image
+  Image,
+  Tooltip,
+  Alert,
+  AlertIcon,
+  AlertDescription
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaGoogle, FaArrowLeft, FaSignOutAlt } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaGoogle, FaArrowLeft, FaSignOutAlt, FaInfoCircle, FaShieldAlt } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 
 const ProfilePage: React.FC = () => {
@@ -225,23 +229,63 @@ const ProfilePage: React.FC = () => {
                 {currentUser?.displayName || currentUser?.email?.split('@')[0] || `ゲスト-${currentUser?.uid.substring(0, 5)}`}
               </Heading>
               
-              <HStack>
-                <Icon as={FaEnvelope} color="gray.500" />
-                <Text color="gray.500">
-                  {currentUser?.email || 'メールアドレス未設定'}
-                </Text>
-              </HStack>
+              <VStack spacing={2}>
+                <HStack>
+                  <Icon as={FaEnvelope} color="gray.500" />
+                  <Text color="gray.500">
+                    {currentUser?.email || 'メールアドレス未設定'}
+                  </Text>
+                  {currentUser?.email?.includes('privaterelay.appleid.com') && (
+                    <Tooltip 
+                      label="このメールアドレスはAppleのプライバシー保護機能です。あなたの実際のメールアドレスに転送されます。" 
+                      fontSize="sm"
+                      hasArrow
+                    >
+                      <Icon as={FaShieldAlt} color="green.500" cursor="pointer" />
+                    </Tooltip>
+                  )}
+                </HStack>
+                
+                {/* Appleプライベートリレーメールの説明 */}
+                {currentUser?.email?.includes('privaterelay.appleid.com') && (
+                  <Alert status="info" borderRadius="md" fontSize="sm">
+                    <AlertIcon />
+                    <AlertDescription>
+                      このメールアドレスはAppleの「メールを非公開」機能で作成されたプライベートアドレスです。
+                      このアプリからのメールは、あなたの実際のApple IDメールアドレスに自動で転送されます。
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </VStack>
               
-              <Text 
-                fontSize="sm" 
-                color="gray.500" 
-                bg={currentUser?.isAnonymous ? 'yellow.100' : 'green.100'} 
-                px={2} 
-                py={1} 
-                borderRadius="full"
-              >
-                {currentUser?.isAnonymous ? 'ゲストユーザー' : '登録ユーザー'}
-              </Text>
+              <HStack spacing={2}>
+                <Text 
+                  fontSize="sm" 
+                  color="gray.500" 
+                  bg={currentUser?.isAnonymous ? 'yellow.100' : 'green.100'} 
+                  px={2} 
+                  py={1} 
+                  borderRadius="full"
+                >
+                  {currentUser?.isAnonymous ? 'ゲストユーザー' : '登録ユーザー'}
+                </Text>
+                
+                {/* Apple Sign-inユーザーの表示 */}
+                {currentUser?.email?.includes('privaterelay.appleid.com') && (
+                  <Text 
+                    fontSize="sm" 
+                    color="blue.500" 
+                    bg="blue.50" 
+                    px={2} 
+                    py={1} 
+                    borderRadius="full"
+                    fontWeight="medium"
+                  >
+                    <Icon as={FaShieldAlt} mr={1} />
+                    Appleサインイン
+                  </Text>
+                )}
+              </HStack>
             </VStack>
             
             {/* アカウント操作ボタン */}

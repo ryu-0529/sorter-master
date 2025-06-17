@@ -10,6 +10,12 @@
 			"showSpinner": false,
 			"splashFullScreen": false,
 			"splashImmersive": false
+		},
+		"SignInWithApple": {
+			"clientId": "com.sortermaster.app",
+			"responseType": "code id_token",
+			"scopes": "email name",
+			"redirectURI": "https://sorter-master.firebaseapp.com/__/auth/handler"
 		}
 	},
 	"server": {
@@ -21,7 +27,8 @@
 			"https://localhost",
 			"https://sorter-master.firebaseapp.com",
 			"https://accounts.google.com",
-			"https://firebase.google.com"
+			"https://firebase.google.com",
+			"https://appleid.apple.com"
 		]
 	},
 	"ios": {

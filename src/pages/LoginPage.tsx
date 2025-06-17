@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Box, 
+  Box,
   Button, 
   Container, 
   Flex, 
@@ -19,13 +19,13 @@ import {
   Divider
 } from '@chakra-ui/react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FaGoogle, FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa';
+import { FaApple, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  const { currentUser, loading, loginWithEmail, loginWithGoogle, signInAsGuest } = useAuth();
+  const { currentUser, loading, loginWithEmail, loginWithGoogle, loginWithApple, signInAsGuest } = useAuth();
   
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -106,6 +106,31 @@ const LoginPage: React.FC = () => {
     }
   };
   
+  // Appleでログイン
+  const handleAppleLogin = async () => {
+    try {
+      setIsLoading(true);
+      await loginWithApple();
+      toast({
+        title: 'ログイン成功',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+      // navigate('/home') は useEffect で自動的に処理される
+    } catch (error) {
+      toast({
+        title: 'ログインエラー',
+        description: 'Appleログインに失敗しました',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   // ゲストとしてログイン
   const handleGuestLogin = async () => {
     try {
@@ -132,25 +157,12 @@ const LoginPage: React.FC = () => {
     }
   };
   
-  // ホームに戻る
-  const handleBackToHome = () => {
-    navigate('/');
-  };
-  
   return (
     <Container maxW="md" py={12}>
       <VStack spacing={8} align="stretch">
         {/* ヘッダー */}
-        <Flex justifyContent="space-between" alignItems="center">
-          <Button 
-            leftIcon={<Icon as={FaArrowLeft} />} 
-            variant="ghost" 
-            onClick={handleBackToHome}
-          >
-            戻る
-          </Button>
+        <Flex justifyContent="center" alignItems="center">
           <Heading as="h1" size="xl" color="brand.500">ログイン</Heading>
-          <Box w="40px" />
         </Flex>
         
         {/* ログインフォーム */}
@@ -209,6 +221,27 @@ const LoginPage: React.FC = () => {
           <Divider my={6} />
           
           <VStack spacing={4}>
+            {/* Sign in with Apple - 最優先で表示 */}
+            <Button 
+              leftIcon={<Icon as={FaApple} />}
+              bg="#000000"
+              color="white"
+              fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+              fontWeight="600"
+              border="1px"
+              borderColor="#000000"
+              borderRadius="6px"
+              height="44px"
+              px={4}
+              _hover={{ bg: "#1a1a1a" }}
+              _active={{ bg: "#333333" }}
+              w="full"
+              onClick={handleAppleLogin}
+              isLoading={isLoading}
+            >
+              Sign in with Apple
+            </Button>
+            
             <Button 
               leftIcon={<Image src="/images/google-logo.svg" alt="Google logo" boxSize="18px" />}
               bg="white"
@@ -229,7 +262,21 @@ const LoginPage: React.FC = () => {
             </Button>
             
             <Button 
-              variant="ghost" 
+              variant="outline" 
+              colorScheme="green"
+              borderWidth="2px"
+              borderColor="green.500"
+              color="green.600"
+              bg="white"
+              _hover={{ 
+                bg: "green.50",
+                borderColor: "green.600",
+                color: "green.700"
+              }}
+              _active={{ 
+                bg: "green.100",
+                borderColor: "green.700"
+              }}
               w="full"
               onClick={handleGuestLogin}
               isLoading={isLoading}

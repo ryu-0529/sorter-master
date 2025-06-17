@@ -6,7 +6,6 @@ import { AdMobProvider } from './contexts/AdMobContext';
 import { GameProvider } from './contexts/GameContext';
 
 // Pages
-import WelcomePage from './pages/WelcomePage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -189,7 +188,7 @@ function App() {
             <GameProvider>
               <Router>
                 <Routes>
-                  <Route path="/" element={<WelcomePage />} />
+                  <Route path="/" element={<LoginPage />} />
                   <Route path="/home" element={<HomePage />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />

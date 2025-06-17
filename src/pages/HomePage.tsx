@@ -22,7 +22,8 @@ import {
   Icon,
   useToast
 } from '@chakra-ui/react';
-import { FaCar, FaSignOutAlt, FaCog, FaUser } from 'react-icons/fa';
+import { FaCar, FaSignOutAlt, FaCog, FaUser, FaGamepad, FaClock } from 'react-icons/fa';
+import BannerAdSpace from '../components/BannerAdSpace';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -148,10 +149,83 @@ const HomePage: React.FC = () => {
                   </VStack>
                 </CardBody>
               </Card>
+
+              {/* 新しいゲーム - Coming Soon */}
+              <Card
+                cursor="not-allowed"
+                opacity={0.6}
+                position="relative"
+                overflow="hidden"
+              >
+                <CardBody>
+                  <VStack spacing={4}>
+                    <Icon as={FaGamepad} boxSize={12} color="gray.400" />
+                    <VStack spacing={2}>
+                      <Heading size="md" color="gray.500">新しいゲーム</Heading>
+                      <HStack spacing={1}>
+                        <Icon as={FaClock} color="gray.400" />
+                        <Text color="gray.400" fontSize="sm" fontWeight="bold">
+                          Coming Soon
+                        </Text>
+                      </HStack>
+                    </VStack>
+                    <Text color="gray.500" textAlign="center">
+                      新しいゲームを準備中です
+                    </Text>
+                    <Button 
+                      colorScheme="gray" 
+                      size="lg" 
+                      w="full" 
+                      isDisabled
+                      cursor="not-allowed"
+                    >
+                      準備中...
+                    </Button>
+                  </VStack>
+                </CardBody>
+              </Card>
+
+              {/* 新しいゲーム - Coming Soon */}
+              <Card
+                cursor="not-allowed"
+                opacity={0.6}
+                position="relative"
+                overflow="hidden"
+              >
+                <CardBody>
+                  <VStack spacing={4}>
+                    <Icon as={FaGamepad} boxSize={12} color="gray.400" />
+                    <VStack spacing={2}>
+                      <Heading size="md" color="gray.500">新しいゲーム</Heading>
+                      <HStack spacing={1}>
+                        <Icon as={FaClock} color="gray.400" />
+                        <Text color="gray.400" fontSize="sm" fontWeight="bold">
+                          Coming Soon
+                        </Text>
+                      </HStack>
+                    </VStack>
+                    <Text color="gray.500" textAlign="center">
+                      新しいゲームを準備中です
+                    </Text>
+                    <Button 
+                      colorScheme="gray" 
+                      size="lg" 
+                      w="full" 
+                      isDisabled
+                      cursor="not-allowed"
+                    >
+                      準備中...
+                    </Button>
+                  </VStack>
+                </CardBody>
+              </Card>
             </Grid>
           </VStack>
         </Container>
       </Box>
+      
+      {/* バナー広告 */}
+      <BannerAdSpace />
     </Box>
   );
 };

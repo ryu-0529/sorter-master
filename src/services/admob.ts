@@ -8,6 +8,15 @@ import {
 } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 
+// App Tracking Transparency のためのプラグイン型定義
+declare global {
+  interface Window {
+    AppTrackingTransparency?: {
+      requestTrackingAuthorization(): Promise<{ status: string }>;
+    };
+  }
+}
+
 export class AdMobService {
   private static instance: AdMobService;
   private isInitialized = false;
@@ -31,6 +40,33 @@ export class AdMobService {
   }
 
   /**
+   * App Tracking Transparencyの許可をリクエスト
+   */
+  public async requestTrackingAuthorization(): Promise<boolean> {
+    try {
+      if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'ios') {
+        console.log('App Tracking Transparency: iOS以外のプラットフォーム、またはWeb環境のためスキップ');
+        return true;
+      }
+
+      // iOS 14.5以降でのみ実行
+      if (window.AppTrackingTransparency) {
+        console.log('App Tracking Transparency: 許可をリクエスト中...');
+        const result = await window.AppTrackingTransparency.requestTrackingAuthorization();
+        const isAuthorized = result.status === 'authorized';
+        console.log('App Tracking Transparency結果:', result.status);
+        return isAuthorized;
+      } else {
+        console.log('App Tracking Transparency: プラグインが利用できません');
+        return true; // プラグインがない場合は許可とみなす
+      }
+    } catch (error) {
+      console.error('App Tracking Transparency リクエストエラー:', error);
+      return false;
+    }
+  }
+
+  /**
    * AdMobを初期化
    */
   public async initialize(): Promise<void> {
@@ -43,6 +79,11 @@ export class AdMobService {
       if (this.isInitialized) {
         console.log('AdMob: 既に初期化済み');
         return;
+      }
+
+      // iOS の場合、App Tracking Transparencyの許可を先にリクエスト
+      if (Capacitor.getPlatform() === 'ios') {
+        await this.requestTrackingAuthorization();
       }
 
       const initOptions: AdMobInitializationOptions = {

@@ -7,6 +7,7 @@ interface AdMobContextType {
   showBannerAd: () => Promise<void>;
   hideBannerAd: () => Promise<void>;
   showInterstitialAd: () => Promise<void>;
+  requestTrackingAuthorization: () => Promise<boolean>;
   isBannerVisible: boolean;
   isInterstitialLoading: boolean;
 }
@@ -69,11 +70,21 @@ export const AdMobProvider: React.FC<AdMobProviderProps> = ({ children }) => {
     }
   };
 
+  const requestTrackingAuthorization = async (): Promise<boolean> => {
+    try {
+      return await adMobService.requestTrackingAuthorization();
+    } catch (error) {
+      console.error('App Tracking Transparencyリクエストに失敗しました:', error);
+      return false;
+    }
+  };
+
   const value: AdMobContextType = {
     isAdMobInitialized,
     showBannerAd,
     hideBannerAd,
     showInterstitialAd,
+    requestTrackingAuthorization,
     isBannerVisible,
     isInterstitialLoading
   };
