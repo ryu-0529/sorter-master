@@ -12,8 +12,13 @@ import {
   GameResult, 
   RankingEntry 
 } from '../types';
+import { 
+  generateGameCards, 
+  generateCarFromCategory, 
+  getCarDatabaseStats 
+} from '../data/carDatabase';
 
-// ゲームのカテゴリ
+// ゲームのカテゴリ (carDatabase.tsと同期させるため維持)
 const CAR_CATEGORIES: CarCategory[] = [
   'クロスカントリー',
   'SUV',
@@ -24,19 +29,6 @@ const CAR_CATEGORIES: CarCategory[] = [
   'セダン',
   'ステーションワゴン',
   'クーペ'
-];
-
-// ダミーの車データ (実際のアプリでは画像URLを適切に設定)
-const DUMMY_CARS: Car[] = [
-  { id: '1', imageUrl: '/images/cars/car1.png', category: 'クロスカントリー' },
-  { id: '2', imageUrl: '/images/cars/car2.png', category: 'SUV' },
-  { id: '3', imageUrl: '/images/cars/car3.png', category: '軽自動車' },
-  { id: '4', imageUrl: '/images/cars/car4.png', category: 'ミニバン' },
-  { id: '5', imageUrl: '/images/cars/car5.png', category: 'ワンボックス' },
-  { id: '6', imageUrl: '/images/cars/car6.png', category: 'コンパクト' },
-  { id: '7', imageUrl: '/images/cars/car7.png', category: 'セダン' },
-  { id: '8', imageUrl: '/images/cars/car8.png', category: 'ステーションワゴン' },
-  { id: '9', imageUrl: '/images/cars/car9.png', category: 'クーペ' }
 ];
 
 interface GameContextProps {
@@ -150,17 +142,16 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     };
   };
 
-  // ゲームカードの準備 (実際のアプリではサーバーから取得)
+  // ゲームカードの準備 (新しい車種データベースシステムを使用)
   const prepareGameCards = (count: number = 20): Car[] => {
-    // 実際のアプリでは、サーバーから車の画像と正しいカテゴリを取得
-    // 今回はダミーデータを使用
-    return Array(count).fill(0).map((_, index) => {
-      const randomCar = DUMMY_CARS[Math.floor(Math.random() * DUMMY_CARS.length)];
-      return {
-        ...randomCar,
-        id: uuidv4() // 一意のIDを生成
-      };
-    });
+    // 新しい車種データベースシステムを使用してカードを生成
+    console.log('車種データベースから', count, '枚のカードを生成します');
+    
+    // データベース統計を表示（デバッグ用）
+    const stats = getCarDatabaseStats();
+    console.log('データベース統計:', stats);
+    
+    return generateGameCards(count);
   };
 
   // シングルプレイヤーゲーム開始

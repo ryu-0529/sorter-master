@@ -14,7 +14,7 @@ import {
   useToast 
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { FaTrophy, FaUsers, FaInfoCircle, FaArrowLeft, FaMusic, FaUtensils, FaClock } from 'react-icons/fa';
+import { FaTrophy, FaUsers, FaInfoCircle, FaArrowLeft } from 'react-icons/fa';
 import { useGame } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useAdMob } from '../contexts/AdMobContext';
@@ -252,85 +252,6 @@ const GameModePage: React.FC = () => {
                 </HStack>
               </Box>
               
-              {/* 音楽ジャンル分類ゲーム - Coming Soon */}
-              <Box 
-                p={6} 
-                bg={bgColor} 
-                borderRadius="lg" 
-                boxShadow="md"
-                border="1px" 
-                borderColor={borderColor}
-                w="full"
-                opacity={0.7}
-              >
-                <HStack spacing={4} alignItems="flex-start">
-                  <Icon as={FaMusic} boxSize={10} color="orange.500" />
-                  <VStack align="start" spacing={3} flex={1}>
-                    <HStack spacing={3} alignItems="center">
-                      <Heading as="h2" size="md">？ジャンル分類ゲーム</Heading>
-                      <Box
-                        px={3}
-                        py={1}
-                        bg="orange.100"
-                        color="orange.600"
-                        borderRadius="full"
-                        fontSize="sm"
-                        fontWeight="bold"
-                      >
-                        <Icon as={FaClock} mr={1} />
-                        Coming Soon
-                      </Box>
-                    </HStack>
-                    <Button 
-                      colorScheme="orange" 
-                      isDisabled
-                      cursor="not-allowed"
-                    >
-                      準備中...
-                    </Button>
-                  </VStack>
-                </HStack>
-              </Box>
-              
-              {/* 料理カテゴリ分類ゲーム - Coming Soon */}
-              <Box 
-                p={6} 
-                bg={bgColor} 
-                borderRadius="lg" 
-                boxShadow="md"
-                border="1px" 
-                borderColor={borderColor}
-                w="full"
-                opacity={0.7}
-              >
-                <HStack spacing={4} alignItems="flex-start">
-                  <Icon as={FaUtensils} boxSize={10} color="red.500" />
-                  <VStack align="start" spacing={3} flex={1}>
-                    <HStack spacing={3} alignItems="center">
-                      <Heading as="h2" size="md">？カテゴリ分類ゲーム</Heading>
-                      <Box
-                        px={3}
-                        py={1}
-                        bg="red.100"
-                        color="red.600"
-                        borderRadius="full"
-                        fontSize="sm"
-                        fontWeight="bold"
-                      >
-                        <Icon as={FaClock} mr={1} />
-                        Coming Soon
-                      </Box>
-                    </HStack>
-                    <Button 
-                      colorScheme="red" 
-                      isDisabled
-                      cursor="not-allowed"
-                    >
-                      準備中...
-                    </Button>
-                  </VStack>
-                </HStack>
-              </Box>
             </VStack>
 
             
