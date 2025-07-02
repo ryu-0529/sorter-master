@@ -16,6 +16,12 @@
 			"responseType": "code id_token",
 			"scopes": "email name",
 			"redirectURI": "https://sorter-master.firebaseapp.com/__/auth/handler"
+		},
+		"FirebaseAuthentication": {
+			"skipNativeAuth": false,
+			"providers": ["google.com", "apple.com"],
+			"forceCodeForRefreshToken": true,
+			"languageCode": "ja"
 		}
 	},
 	"server": {

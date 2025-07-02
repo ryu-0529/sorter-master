@@ -1,5 +1,8 @@
 import UIKit
 import Capacitor
+import FirebaseCore
+import FirebaseAuth
+import GoogleSignIn
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,6 +10,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Initialize Firebase
+        FirebaseApp.configure()
+        
+        // Configure Google Sign-In
+        guard let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
+              let plist = NSDictionary(contentsOfFile: path),
+              let clientId = plist["CLIENT_ID"] as? String else {
+            fatalError("GoogleService-Info.plist file not found or CLIENT_ID missing")
+        }
+        
+        // Configure Google Sign-In with the client ID
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientId)
+        
         // Create window
         window = UIWindow(frame: UIScreen.main.bounds)
         
@@ -43,8 +59,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        // Print debug information about URL handling
+        print("AppDelegate: Handling URL: \(url)")
+        print("AppDelegate: URL scheme: \(url.scheme ?? "nil")")
+        print("AppDelegate: URL host: \(url.host ?? "nil")")
+        print("AppDelegate: URL path: \(url.path)")
+        print("AppDelegate: URL query: \(url.query ?? "nil")")
+        print("AppDelegate: Options: \(options)")
+        
+        // Firebase Auth handling (should be checked first)
+        if Auth.auth().canHandle(url) {
+            print("AppDelegate: Firebase Auth handled the URL")
+            return true
+        }
+        
+        // Google Sign-In handling
+        if GIDSignIn.sharedInstance.handle(url) {
+            print("AppDelegate: Google Sign-In handled the URL")
+            return true
+        }
+        
         // Called when the app was launched with a url. Feel free to add additional processing here,
         // but if you want the App API to support tracking app url opens, make sure to keep this call
+        print("AppDelegate: Delegating to ApplicationDelegateProxy")
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
     }
 

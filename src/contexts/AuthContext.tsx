@@ -1,27 +1,105 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { 
   User as FirebaseUser,
   signInAnonymously, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
-  signInWithCredential,
-  GoogleAuthProvider,
-  OAuthProvider,
   signOut,
   onAuthStateChanged,
   linkWithCredential,
   EmailAuthProvider,
   updateProfile,
-  getAdditionalUserInfo
+  GoogleAuthProvider,
+  OAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, firestore } from '../services/firebase';
+import { getFirebaseAuth, firestore } from '../services/firebase';
 import { User } from '../types';
 import { Capacitor } from '@capacitor/core';
-import { SignInWithApple } from '@capacitor-community/apple-sign-in';
+
+// グローバルにプラグインをキャッシュ
+let cachedFirebaseAuthentication: any = null;
+let pluginLoadPromise: Promise<any> | null = null;
+
+// Capacitor Firebase Authenticationプラグインを早期にロード
+const preloadFirebaseAuthentication = () => {
+  if (Capacitor.isNativePlatform() && !pluginLoadPromise) {
+    console.log('preloadFirebaseAuthentication: プラグインの早期ロード開始');
+    
+    pluginLoadPromise = import('@capacitor-firebase/authentication')
+      .then((module) => {
+        console.log('preloadFirebaseAuthentication: プラグインロード成功');
+        cachedFirebaseAuthentication = module.FirebaseAuthentication;
+        return cachedFirebaseAuthentication;
+      })
+      .catch((error) => {
+        console.error('preloadFirebaseAuthentication: プラグインロード失敗:', error);
+        cachedFirebaseAuthentication = null;
+        pluginLoadPromise = null;
+        return null;
+      });
+    
+    return pluginLoadPromise;
+  }
+  return Promise.resolve(null);
+};
+
+// Dynamic import for Capacitor Firebase Authentication with improved error handling
+const getFirebaseAuthentication = async () => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      console.log('getFirebaseAuthentication: 動的インポート開始');
+      
+      // キャッシュされたプラグインがある場合はそれを使用
+      if (cachedFirebaseAuthentication) {
+        console.log('getFirebaseAuthentication: キャッシュされたプラグインを使用');
+        return cachedFirebaseAuthentication;
+      }
+      
+      // 進行中のロードがある場合はそれを待つ
+      if (pluginLoadPromise) {
+        console.log('getFirebaseAuthentication: 進行中のロードを待機');
+        return await pluginLoadPromise;
+      }
+      
+      // タイムアウト付きで動的インポートを実行
+      const importPromise = import('@capacitor-firebase/authentication');
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('プラグインインポートがタイムアウトしました'));
+        }, 20000); // 20秒のタイムアウト（延長）
+      });
+      
+      const module = await Promise.race([importPromise, timeoutPromise]) as any;
+      console.log('getFirebaseAuthentication: インポート成功:', !!module.FirebaseAuthentication);
+      
+      const plugin = module.FirebaseAuthentication;
+      if (!plugin) {
+        throw new Error('FirebaseAuthenticationプラグインが見つかりません');
+      }
+      
+      // プラグインが正しく利用可能かテスト
+      console.log('getFirebaseAuthentication: プラグインメソッド確認:', {
+        hasSignInWithGoogle: typeof plugin.signInWithGoogle === 'function',
+        hasSignInWithApple: typeof plugin.signInWithApple === 'function',
+        hasSignOut: typeof plugin.signOut === 'function'
+      });
+      
+      // キャッシュに保存
+      cachedFirebaseAuthentication = plugin;
+      return plugin;
+    } catch (error: any) {
+      console.error('getFirebaseAuthentication: インポートエラー:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      throw new Error(`Firebase Authentication プラグインの読み込みに失敗: ${error.message}`);
+    }
+  }
+  return null;
+};
 
 interface AuthContextProps {
   currentUser: User | null;
@@ -56,6 +134,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // アプリ起動時にプラグインをプリロード
+  useEffect(() => {
+    console.log('AuthProvider: プラグインのプリロード開始');
+    preloadFirebaseAuthentication()
+      .then(() => {
+        console.log('AuthProvider: プラグインプリロード完了または不要');
+      })
+      .catch((error) => {
+        console.warn('AuthProvider: プラグインプリロードエラー（無視）:', error);
+      });
+  }, []);
 
   // Firebaseユーザーオブジェクトから独自のユーザーオブジェクトを作成する
   const createUserObject = async (firebaseUser: FirebaseUser | null): Promise<User | null> => {
@@ -118,6 +208,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signInAsGuest = async () => {
     try {
       setError(null);
+      const auth = getFirebaseAuth();
       const result = await signInAnonymously(auth);
       const user = await createUserObject(result.user);
       if (user) {
@@ -133,6 +224,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loginWithEmail = async (email: string, password: string) => {
     try {
       setError(null);
+      const auth = getFirebaseAuth();
       await signInWithEmailAndPassword(auth, email, password);
       // ログイン成功時は onAuthStateChanged で自動的に currentUser が更新される
     } catch (err) {
@@ -146,6 +238,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const registerWithEmail = async (email: string, password: string, displayName: string) => {
     try {
       setError(null);
+      const auth = getFirebaseAuth();
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
       // Firebase Authのプロフィールを更新
@@ -166,52 +259,365 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Googleでのログイン（Capacitor環境に最適化）
+  // Googleでのログイン（環境別認証方式）
   const loginWithGoogle = async () => {
     try {
       setError(null);
-      console.log('Google Sign-in: 開始');
+      console.log('=== Google Sign-in: 開始 ===');
+      console.log('Google Sign-in: Capacitor.isNativePlatform():', Capacitor.isNativePlatform());
+      console.log('Google Sign-in: Capacitor.getPlatform():', Capacitor.getPlatform());
       
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({
-        prompt: 'select_account'
+      // Firebase設定の事前確認
+      const auth = getFirebaseAuth();
+      console.log('Google Sign-in: Firebase設定確認:', {
+        hasAuth: !!auth,
+        apiKey: !!auth.app.options.apiKey ? '設定済み' : '未設定',
+        authDomain: auth.app.options.authDomain,
+        projectId: auth.app.options.projectId,
+        appId: !!auth.app.options.appId ? '設定済み' : '未設定'
       });
       
-      let result;
-      
       if (Capacitor.isNativePlatform()) {
-        // ネイティブ環境ではredirectを使用
-        console.log('Google Sign-in: Redirect方式を使用（ネイティブ環境）');
-        await signInWithRedirect(auth, provider);
-        // この時点ではまだ認証は完了していない（リダイレクト後に処理される）
-        return;
+        // ネイティブ環境では@capacitor-firebase/authenticationプラグインを使用
+        console.log('Google Sign-in: ネイティブ環境で@capacitor-firebase/authenticationプラグインを使用');
+        console.log('Google Sign-in: プラグイン取得開始');
+        
+        let FirebaseAuthentication;
+        try {
+          // より長いタイムアウトでプラグイン取得を試行
+          const pluginTimeout = new Promise((_, reject) => {
+            setTimeout(() => {
+              reject(new Error('プラグイン取得がタイムアウトしました（25秒）'));
+            }, 25000); // 25秒に延長
+          });
+          
+          FirebaseAuthentication = await Promise.race([
+            getFirebaseAuthentication(),
+            pluginTimeout
+          ]);
+          
+          console.log('Google Sign-in: getFirebaseAuthentication結果:', !!FirebaseAuthentication);
+          
+        } catch (pluginError: any) {
+          console.error('Google Sign-in: プラグイン取得エラー詳細:', {
+            message: pluginError.message,
+            stack: pluginError.stack,
+            name: pluginError.name
+          });
+          
+          // プラグインが完全に失敗した場合、Webビューにフォールバック
+          console.warn('Google Sign-in: プラグインが利用できないため、Webビューモードにフォールバックします');
+          
+          try {
+            // WebビューでのGoogle Sign-Inを試行（最適化版）
+            const auth = getFirebaseAuth();
+            
+            // 簡素なGoogleAuthProviderを作成
+            const provider = new GoogleAuthProvider();
+            
+            // 必要最小限の設定のみを追加
+            provider.addScope('email');
+            provider.addScope('profile');
+            
+            console.log('Google Sign-in: フォールバック - 最適化されたWebビューでsignInWithPopup開始');
+            console.log('Google Sign-in: 設定確認:', {
+              authInstanceExists: !!auth,
+              providerType: provider.providerId,
+              appOptions: {
+                apiKey: !!auth.app.options.apiKey,
+                authDomain: auth.app.options.authDomain,
+                projectId: auth.app.options.projectId
+              }
+            });
+            
+            const fallbackTimeout = new Promise((_, reject) => {
+              setTimeout(() => {
+                reject(new Error('フォールバック認証がタイムアウトしました'));
+              }, 30000);
+            });
+            
+            const fallbackResult = await Promise.race([
+              signInWithPopup(auth, provider),
+              fallbackTimeout
+            ]) as any;
+            
+            console.log('Google Sign-in: フォールバック認証成功');
+            
+            const user = await createUserObject(fallbackResult.user);
+            if (user) {
+              await saveUserToFirestore(user);
+              setCurrentUser(user);
+              setLoading(false);
+              console.log('Google Sign-in: フォールバック完了');
+              return; // 成功したので処理終了
+            }
+          } catch (fallbackError: any) {
+            console.error('Google Sign-in: フォールバックエラー詳細:', {
+              code: fallbackError.code,
+              message: fallbackError.message,
+              stack: fallbackError.stack
+            });
+            
+            // Firebase設定情報をログ出力
+            console.log('Google Sign-in: Firebase設定確認:', {
+              apiKey: !!auth.app.options.apiKey,
+              authDomain: auth.app.options.authDomain,
+              projectId: auth.app.options.projectId
+            });
+          }
+          
+          // プラグインもフォールバックも失敗した場合
+          throw new Error(`Google認証が利用できません。アプリを再起動してからもう一度お試しください。`);
+        }
+        
+        if (!FirebaseAuthentication) {
+          console.error('Google Sign-in: Firebase Authentication プラグインがnull - Webビューにフォールバック');
+          
+          // nullの場合もWebビューにフォールバック
+          try {
+            // null用の最適化されたWebビュー認証
+            const auth = getFirebaseAuth();
+            
+            // 簡素なGoogleAuthProviderを作成
+            const provider = new GoogleAuthProvider();
+            
+            // 必要最小限の設定のみを追加
+            provider.addScope('email');
+            provider.addScope('profile');
+            
+            console.log('Google Sign-in: nullフォールバック - 最適化されたWebビューでsignInWithPopup開始');
+            console.log('Google Sign-in: 設定確認:', {
+              authInstanceExists: !!auth,
+              providerType: provider.providerId,
+              appOptions: {
+                apiKey: !!auth.app.options.apiKey,
+                authDomain: auth.app.options.authDomain,
+                projectId: auth.app.options.projectId
+              }
+            });
+            
+            const nullFallbackTimeout = new Promise((_, reject) => {
+              setTimeout(() => {
+                reject(new Error('nullフォールバック認証がタイムアウトしました'));
+              }, 30000);
+            });
+            
+            const nullFallbackResult = await Promise.race([
+              signInWithPopup(auth, provider),
+              nullFallbackTimeout
+            ]) as any;
+            
+            console.log('Google Sign-in: nullフォールバック認証成功');
+            
+            const user = await createUserObject(nullFallbackResult.user);
+            if (user) {
+              await saveUserToFirestore(user);
+              setCurrentUser(user);
+              setLoading(false);
+              console.log('Google Sign-in: nullフォールバック完了');
+              return; // 成功したので処理終了
+            }
+          } catch (nullFallbackError: any) {
+            console.error('Google Sign-in: nullフォールバックエラー詳細:', {
+              code: nullFallbackError.code,
+              message: nullFallbackError.message,
+              stack: nullFallbackError.stack
+            });
+            
+            // Firebase設定情報をログ出力
+            const auth = getFirebaseAuth();
+            console.log('Google Sign-in: Firebase設定確認:', {
+              apiKey: !!auth.app.options.apiKey,
+              authDomain: auth.app.options.authDomain,
+              projectId: auth.app.options.projectId
+            });
+          }
+          
+          throw new Error('Firebase Authentication プラグインの初期化に失敗しました');
+        }
+        
+        console.log('Google Sign-in: プラグイン取得成功、利用可能メソッド確認中...');
+        
+        // プラグインの状態とメソッドを確認
+        try {
+          console.log('Google Sign-in: プラグインメソッド確認:', {
+            hasSignInWithGoogle: typeof FirebaseAuthentication.signInWithGoogle === 'function',
+            hasGetCurrentUser: typeof FirebaseAuthentication.getCurrentUser === 'function',
+            hasSignOut: typeof FirebaseAuthentication.signOut === 'function'
+          });
+          
+          // 現在の認証状態を確認（オプション）
+          console.log('Google Sign-in: 現在の認証状態確認中...');
+          const currentUserCheck = await FirebaseAuthentication.getCurrentUser();
+          console.log('Google Sign-in: 現在のユーザー状態:', currentUserCheck ? 'ユーザー存在' : 'ユーザーなし');
+        } catch (checkError: any) {
+          console.log('Google Sign-in: 事前確認エラー（これは正常な場合がある）:', checkError.message);
+        }
+        
+        console.log('Google Sign-in: Google認証開始...');
+        
+        try {
+          // Google Sign-In実行（より短いタイムアウト）
+          const signInTimeout = new Promise((_, reject) => {
+            setTimeout(() => {
+              console.log('Google Sign-in: Google認証タイムアウト（20秒）');
+              reject(new Error('Google認証がタイムアウトしました'));
+            }, 20000); // 20秒のタイムアウト
+          });
+          
+          console.log('Google Sign-in: signInWithGoogle()呼び出し実行...');
+          const result = await Promise.race([
+            FirebaseAuthentication.signInWithGoogle(),
+            signInTimeout
+          ]) as any;
+          
+          console.log('Google Sign-in: ネイティブ認証成功', {
+            hasResult: !!result,
+            hasUser: !!result?.user,
+            userId: result?.user?.uid || 'なし'
+          });
+          
+          // Firebase Authの状態確認（重要）
+          console.log('Google Sign-in: Firebase Auth状態確認...');
+          const auth = getFirebaseAuth();
+          
+          // 認証結果を複数回チェック
+          let currentUser = auth.currentUser;
+          let retryCount = 0;
+          const maxRetries = 5;
+          
+          while (!currentUser && retryCount < maxRetries) {
+            console.log(`Google Sign-in: currentUser確認 (試行 ${retryCount + 1}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒待機
+            currentUser = auth.currentUser;
+            retryCount++;
+          }
+          
+          if (currentUser) {
+            console.log('Google Sign-in: Firebase Auth currentUser確認済み', {
+              uid: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName
+            });
+            
+            const user = await createUserObject(currentUser);
+            if (user) {
+              console.log('Google Sign-in: ユーザーオブジェクト作成成功');
+              await saveUserToFirestore(user);
+              console.log('Google Sign-in: Firestore保存成功');
+              
+              // 状態を明示的に更新
+              setCurrentUser(user);
+              setLoading(false);
+              console.log('Google Sign-in: 認証完了');
+            } else {
+              throw new Error('ユーザーオブジェクトの作成に失敗しました');
+            }
+          } else {
+            throw new Error('Firebase Authenticationでユーザーが確認できませんでした');
+          }
+          
+        } catch (signInError: any) {
+          console.error('Google Sign-in: 認証エラー詳細:', {
+            message: signInError.message,
+            code: signInError.code,
+            stack: signInError.stack,
+            name: signInError.name
+          });
+          
+          // エラーコードに基づいてメッセージを設定
+          let errorMessage = 'Google認証中にエラーが発生しました';
+          if (signInError.message.includes('タイムアウト')) {
+            errorMessage = 'Google認証がタイムアウトしました。もう一度お試しください。';
+          } else if (signInError.code === 'auth/popup-closed-by-user') {
+            errorMessage = 'Google認証がキャンセルされました';
+          } else if (signInError.code === 'auth/network-request-failed') {
+            errorMessage = 'ネットワークエラーが発生しました。接続を確認してください';
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
       } else {
-        // Web環境ではpopupを使用
-        console.log('Google Sign-in: Popup方式を使用（Web環境）');
-        result = await signInWithPopup(auth, provider);
-      }
-      
-      if (result) {
-        console.log('Google Sign-in: Firebase認証成功', result.user.uid);
+        // Web環境ではFirebase SDKを使用（最適化版）
+        console.log('Google Sign-in: Web環境でFirebase SDKを使用');
+        
+        const auth = getFirebaseAuth();
+        
+        // 簡素なGoogleAuthProviderを作成
+        const provider = new GoogleAuthProvider();
+        
+        // 必要最小限の設定のみを追加
+        provider.addScope('email');
+        provider.addScope('profile');
+        
+        console.log('Google Sign-in: signInWithPopup開始');
+        console.log('Google Sign-in: 設定確認:', {
+          authInstanceExists: !!auth,
+          providerType: provider.providerId,
+          appOptions: {
+            apiKey: !!auth.app.options.apiKey,
+            authDomain: auth.app.options.authDomain,
+            projectId: auth.app.options.projectId
+          }
+        });
+        
+        // Web環境でもタイムアウトを設定
+        const webTimeout = new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('Web版Google認証がタイムアウトしました'));
+          }, 30000); // 30秒のタイムアウト
+        });
+        
+        const result = await Promise.race([
+          signInWithPopup(auth, provider),
+          webTimeout
+        ]) as any;
+        
+        console.log('Google Sign-in: Firebase認証成功', {
+          uid: result.user.uid,
+          email: result.user.email
+        });
         
         const user = await createUserObject(result.user);
         if (user) {
-          console.log('Google Sign-in: ユーザー情報作成成功', user);
+          console.log('Google Sign-in: ユーザー情報作成成功');
           await saveUserToFirestore(user);
           console.log('Google Sign-in: Firestore保存成功');
         }
       }
     } catch (err: any) {
-      console.error("Google Sign-in: 詳細エラー情報", {
+      console.error("=== Google Sign-in: 最終エラー情報 ===");
+      console.error('Google Sign-in: エラー詳細:', {
         code: err.code,
         message: err.message,
-        stack: err.stack
+        stack: err.stack,
+        name: err.name
       });
+      
+      // Firebase設定の再確認
+      try {
+        const auth = getFirebaseAuth();
+        console.error('Google Sign-in: エラー時Firebase設定:', {
+          authDomain: auth.app.options.authDomain,
+          projectId: auth.app.options.projectId,
+          apiKeyExists: !!auth.app.options.apiKey,
+          appIdExists: !!auth.app.options.appId
+        });
+      } catch (configError) {
+        console.error('Google Sign-in: Firebase設定確認エラー:', configError);
+      }
       
       // より具体的なエラーメッセージを設定
       let userFriendlyMessage = 'Googleログインに失敗しました';
       
-      if (err.code === 'auth/popup-closed-by-user') {
+      if (err.code === 'auth/argument-error') {
+        userFriendlyMessage = 'Google認証の設定に問題があります。アプリの再インストールをお試しください。';
+      } else if (err.message.includes('プラグインの読み込みに失敗') || 
+          err.message.includes('タイムアウト') ||
+          err.message.includes('利用できません')) {
+        userFriendlyMessage = 'Google認証サービスに接続できません。アプリを再起動してからもう一度お試しください。';
+      } else if (err.code === 'auth/popup-closed-by-user') {
         userFriendlyMessage = 'ログインがキャンセルされました';
       } else if (err.code === 'auth/popup-blocked') {
         userFriendlyMessage = 'ポップアップがブロックされました。ブラウザの設定を確認してください';
@@ -228,133 +634,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Nonceを生成するヘルパー関数
-  const generateNonce = (length = 32) => {
-    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let nonce = '';
-    for (let i = 0; i < length; i++) {
-      nonce += charset.charAt(Math.floor(Math.random() * charset.length));
-    }
-    return nonce;
-  };
-
-  // SHA256でハッシュ化するヘルパー関数
-  const sha256 = async (plain: string) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(plain);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hash));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
-  };
-
-  // Appleでのログイン（Capacitor環境に最適化）
+  // Appleでのログイン（@capacitor-firebase/authenticationを使用）
   const loginWithApple = async () => {
     try {
       setError(null);
       console.log('Apple Sign-in: 開始');
       
-      // Capacitor環境ではネイティブプラグインを優先使用
       if (Capacitor.isNativePlatform()) {
-        console.log('ネイティブ Sign in with Apple プラグインを使用');
+        // ネイティブ環境では@capacitor-firebase/authenticationを使用
+        console.log('Apple Sign-in: ネイティブ @capacitor-firebase/authentication プラグインを使用');
         
-        try {
-          // Nonceを生成してハッシュ化
-          const rawNonce = generateNonce();
-          const hashedNonce = await sha256(rawNonce);
-          
-          // Apple Sign-In設定
-          const options = {
-            clientId: 'com.sortermaster.app', // .signinは不要
-            redirectURI: 'https://sorter-master.firebaseapp.com/__/auth/handler',
-            scopes: 'email name',
-            nonce: hashedNonce, // ハッシュ化したnonceを送信
-            state: Math.random().toString(36).substring(2, 15),
-            responseType: 'code id_token'
-          };
-          
-          console.log('Apple Sign-in: ネイティブ認証開始');
-          const result = await SignInWithApple.authorize(options);
-          console.log('Apple Sign-in: ネイティブ認証結果（ID Token取得）', result);
-          
-          // Appleから返されたidentityTokenを使用してFirebaseにサインイン
-          if (result.response?.identityToken) {
-            const provider = new OAuthProvider('apple.com');
-            
-            try {
-              // Firebase認証用のcredentialを作成（nonceを含む）
-              const credential = provider.credential({
-                idToken: result.response.identityToken,
-                rawNonce: rawNonce // 元のnonceを送信
-              });
-              
-              console.log('Apple Sign-in: Firebase認証開始');
-              const firebaseResult = await signInWithCredential(auth, credential);
-              console.log('Apple Sign-in: Firebase認証成功', firebaseResult.user.uid);
-              
-              // AdditionalUserInfoから初回認証情報を取得
-              const additionalUserInfo = getAdditionalUserInfo(firebaseResult);
-              console.log('Apple Sign-in: Additional User Info:', additionalUserInfo);
-              
-              // Apple Sign-inから名前情報を取得（初回のみ）
-              let displayName = firebaseResult.user.displayName;
-              if (additionalUserInfo?.isNewUser && (result.response?.givenName || result.response?.familyName)) {
-                const { givenName, familyName } = result.response;
-                if (givenName || familyName) {
-                  displayName = `${familyName || ''} ${givenName || ''}`.trim();
-                  console.log('Apple Sign-in: 名前情報を取得:', displayName);
-                  
-                  // Firebase Authのプロフィールを更新
-                  await updateProfile(firebaseResult.user, {
-                    displayName: displayName
-                  });
-                }
-              }
-              
-              const user = await createUserObject(firebaseResult.user);
-              if (user) {
-                // 名前情報が取得できた場合は更新
-                if (displayName && displayName !== user.displayName) {
-                  user.displayName = displayName;
-                }
-                console.log('Apple Sign-in: ユーザー情報作成成功', user);
-                await saveUserToFirestore(user);
-                console.log('Apple Sign-in: Firestore保存成功');
-              }
-            } catch (firebaseError: any) {
-              console.error('Firebase認証エラー:', firebaseError);
-              
-              // auth/operation-not-allowed の場合の詳細処理
-              if (firebaseError.code === 'auth/operation-not-allowed') {
-                console.error('Firebase ConsoleでApple認証が無効になっています');
-                throw new Error('Apple認証が設定されていません。Firebase ConsoleでApple認証を有効化してください。');
-              }
-              
-              // auth/invalid-credential の場合
-              if (firebaseError.code === 'auth/invalid-credential') {
-                console.error('Apple認証の設定が正しくありません');
-                throw new Error('Apple認証の設定を確認してください。Service ID、Team ID、Key IDが正しく設定されているか確認してください。');
-              }
-              
-              // 他のFirebaseエラーの場合は再スロー
-              throw firebaseError;
-            }
-          } else {
-            throw new Error('Apple認証からidentityTokenが取得できませんでした');
-          }
-        } catch (nativeError: any) {
-          console.error('ネイティブApple Sign-in エラー:', nativeError);
-          
-          // エラーメッセージに基づいた処理
-          if (nativeError.message && nativeError.message.includes('Apple認証が設定されていません')) {
-            throw nativeError;
-          }
-          
-          throw new Error('Apple Sign-Inに失敗しました。設定を確認してください。');
+        const FirebaseAuthentication = await getFirebaseAuthentication();
+        if (!FirebaseAuthentication) {
+          throw new Error('Firebase Authentication プラグインの初期化に失敗しました');
         }
+        
+        const result = await FirebaseAuthentication.signInWithApple();
+        console.log('Apple Sign-in: ネイティブ認証成功', result.user?.uid);
+        
+        // FirebaseAuthenticationプラグインではユーザーは既にFirebase Authに登録されている
+        // onAuthStateChangedが呼ばれるのでそこで処理される
+        
       } else {
-        // Web環境では Firebase方式
-        console.log('Web Firebase Sign in with Apple を使用');
+        // Web環境では従来のFirebase SDKを使用
+        console.log('Apple Sign-in: Web環境でFirebase SDKを使用');
         
         const provider = new OAuthProvider('apple.com');
         provider.addScope('email');
@@ -363,38 +666,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           locale: 'ja'
         });
         
-        console.log('Apple Sign-in: Firebase認証開始');
+        const { signInWithPopup } = await import('firebase/auth');
+        const auth = getFirebaseAuth();
         const result = await signInWithPopup(auth, provider);
         console.log('Apple Sign-in: Firebase認証成功', result.user.uid);
         
-        // AdditionalUserInfoから初回認証情報を取得
-        const additionalUserInfo = getAdditionalUserInfo(result);
-        console.log('Apple Sign-in Web: Additional User Info:', additionalUserInfo);
-        
-        // Apple Sign-inから名前情報を取得（初回のみ）
-        let displayName = result.user.displayName;
-        if (additionalUserInfo?.isNewUser && additionalUserInfo?.profile) {
-          const profile = additionalUserInfo.profile as any;
-          if (profile.name) {
-            displayName = `${profile.name.lastName || ''} ${profile.name.firstName || ''}`.trim();
-            console.log('Apple Sign-in Web: 名前情報を取得:', displayName);
-            
-            // Firebase Authのプロフィールを更新
-            await updateProfile(result.user, {
-              displayName: displayName
-            });
-          }
-        }
-        
         const user = await createUserObject(result.user);
         if (user) {
-          // 名前情報が取得できた場合は更新
-          if (displayName && displayName !== user.displayName) {
-            user.displayName = displayName;
-          }
-          console.log('Apple Sign-in Web: ユーザー情報作成成功', user);
+          console.log('Apple Sign-in: ユーザー情報作成成功', user);
           await saveUserToFirestore(user);
-          console.log('Apple Sign-in Web: Firestore保存成功');
+          console.log('Apple Sign-in: Firestore保存成功');
         }
       }
     } catch (err: any) {
@@ -420,10 +701,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         userFriendlyMessage = 'Apple Sign-inの設定に問題があります。Firebase Consoleの設定を確認してください';
       } else if (err.code === 'auth/operation-not-allowed') {
         userFriendlyMessage = 'Apple認証がFirebase Consoleで有効化されていません。管理者にお問い合わせください。';
-      } else if (err.message && err.message.includes('Firebase Console')) {
-        userFriendlyMessage = err.message;
-      } else if (err.message && err.message.includes('Apple認証')) {
-        userFriendlyMessage = err.message;
       }
       
       setError(userFriendlyMessage);
@@ -435,10 +712,113 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       setError(null);
-      await signOut(auth);
-    } catch (err) {
-      setError((err as Error).message);
-      console.error("ログアウトエラー:", err);
+      console.log('=== ログアウト処理開始 ===');
+      console.log('Logout: Capacitor.isNativePlatform():', Capacitor.isNativePlatform());
+      console.log('Logout: Capacitor.getPlatform():', Capacitor.getPlatform());
+      
+      const auth = getFirebaseAuth();
+      console.log('Logout: 現在のユーザー:', auth.currentUser?.uid || 'なし');
+      console.log('Logout: 現在のユーザー詳細:', auth.currentUser ? {
+        uid: auth.currentUser.uid,
+        email: auth.currentUser.email,
+        isAnonymous: auth.currentUser.isAnonymous,
+        displayName: auth.currentUser.displayName
+      } : 'ユーザーなし');
+      
+      // ログアウト前の状態を記録
+      const wasAuthenticated = !!auth.currentUser;
+      const wasAnonymous = auth.currentUser?.isAnonymous || false;
+      
+      if (Capacitor.isNativePlatform()) {
+        // ネイティブ環境では両方のSDKでログアウト処理を実行
+        console.log('Logout: ネイティブ環境での処理開始');
+        
+        let pluginLogoutSuccess = false;
+        let sdkLogoutSuccess = false;
+        
+        // 1. Capacitor Firebase Authenticationプラグインでログアウト
+        try {
+          console.log('Logout: プラグインログアウト開始...');
+          const FirebaseAuthentication = await getFirebaseAuthentication();
+          if (FirebaseAuthentication) {
+            await FirebaseAuthentication.signOut();
+            pluginLogoutSuccess = true;
+            console.log('Logout: ✅ プラグインログアウト成功');
+          } else {
+            console.warn('Logout: ⚠️ FirebaseAuthenticationプラグインが利用できません');
+          }
+        } catch (pluginError: any) {
+          console.error('Logout: ❌ プラグインログアウトエラー:', {
+            error: pluginError,
+            message: pluginError?.message || 'Unknown error',
+            code: pluginError?.code || 'Unknown code',
+            stack: pluginError?.stack
+          });
+        }
+        
+        // 2. Firebase SDKでもログアウトを実行（確実にするため）
+        try {
+          console.log('Logout: Firebase SDKログアウト開始...');
+          await signOut(auth);
+          sdkLogoutSuccess = true;
+          console.log('Logout: ✅ Firebase SDKログアウト成功');
+        } catch (sdkError: any) {
+          console.error('Logout: ❌ Firebase SDKログアウトエラー:', {
+            error: sdkError,
+            message: sdkError?.message || 'Unknown error',
+            code: sdkError?.code || 'Unknown code',
+            stack: sdkError?.stack
+          });
+        }
+        
+        console.log('Logout: ネイティブ環境処理結果:', {
+          pluginLogoutSuccess,
+          sdkLogoutSuccess,
+          anySuccess: pluginLogoutSuccess || sdkLogoutSuccess
+        });
+        
+      } else {
+        // Web環境ではFirebase SDKを使用
+        console.log('Logout: Web環境でのFirebase SDKログアウト開始...');
+        await signOut(auth);
+        console.log('Logout: ✅ Web環境ログアウト成功');
+      }
+      
+      // ログアウト後の状態確認
+      console.log('Logout: ログアウト後の認証状態確認...');
+      console.log('Logout: auth.currentUser:', auth.currentUser?.uid || 'なし');
+      
+      // 強制的に認証状態をリセット
+      console.log('Logout: 認証状態を強制リセット...');
+      setCurrentUser(null);
+      setLoading(false);
+      
+      // 成功メッセージ
+      console.log('=== ✅ ログアウト処理完了 ===');
+      console.log('Logout: 処理前の状態:', { wasAuthenticated, wasAnonymous });
+      console.log('Logout: 処理後の状態:', { currentUser: null, loading: false });
+      
+    } catch (err: any) {
+      console.error("=== ❌ ログアウトエラー ===");
+      console.error("Logout: エラー詳細:", {
+        error: err,
+        message: err?.message || 'Unknown error',
+        code: err?.code || 'Unknown code',
+        name: err?.name || 'Unknown name',
+        stack: err?.stack
+      });
+      
+      // エラーメッセージを設定
+      const errorMessage = err?.message || 'ログアウト処理中にエラーが発生しました';
+      setError(errorMessage);
+      
+      // エラーが発生しても強制的に認証状態をクリア（重要！）
+      console.log('Logout: エラー発生のため強制的に認証状態をクリア');
+      setCurrentUser(null);
+      setLoading(false);
+      
+      // エラーを再スローして呼び出し元で処理できるようにする
+      throw new Error(errorMessage);
     }
   };
 
@@ -446,6 +826,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const linkAnonymousWithEmail = async (email: string, password: string, displayName: string) => {
     try {
       setError(null);
+      const auth = getFirebaseAuth();
       if (auth.currentUser && auth.currentUser.isAnonymous) {
         const credential = EmailAuthProvider.credential(email, password);
         await linkWithCredential(auth.currentUser, credential);
@@ -479,9 +860,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const linkAnonymousWithGoogle = async () => {
     try {
       setError(null);
+      const auth = getFirebaseAuth();
       if (auth.currentUser && auth.currentUser.isAnonymous) {
-        const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
+        if (Capacitor.isNativePlatform()) {
+          // ネイティブ環境では@capacitor-firebase/authenticationを使用
+          const FirebaseAuthentication = await getFirebaseAuthentication();
+          if (FirebaseAuthentication) {
+            await FirebaseAuthentication.linkWithGoogle();
+          } else {
+            throw new Error('Firebase Authentication プラグインの初期化に失敗しました');
+          }
+        } else {
+          // Web環境ではFirebase SDKを使用
+          const provider = new GoogleAuthProvider();
+          const { linkWithPopup } = await import('firebase/auth');
+          await linkWithPopup(auth.currentUser, provider);
+        }
       }
     } catch (err) {
       setError((err as Error).message);
@@ -493,11 +887,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const linkAnonymousWithApple = async () => {
     try {
       setError(null);
+      const auth = getFirebaseAuth();
       if (auth.currentUser && auth.currentUser.isAnonymous) {
-        const provider = new OAuthProvider('apple.com');
-        provider.addScope('email');
-        provider.addScope('name');
-        await signInWithPopup(auth, provider);
+        if (Capacitor.isNativePlatform()) {
+          // ネイティブ環境では@capacitor-firebase/authenticationを使用
+          const FirebaseAuthentication = await getFirebaseAuthentication();
+          if (FirebaseAuthentication) {
+            await FirebaseAuthentication.linkWithApple();
+          } else {
+            throw new Error('Firebase Authentication プラグインの初期化に失敗しました');
+          }
+        } else {
+          // Web環境ではFirebase SDKを使用
+          const provider = new OAuthProvider('apple.com');
+          provider.addScope('email');
+          provider.addScope('name');
+          const { linkWithPopup } = await import('firebase/auth');
+          await linkWithPopup(auth.currentUser, provider);
+        }
       }
     } catch (err) {
       setError((err as Error).message);
@@ -505,70 +912,103 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // リダイレクト結果の処理（ネイティブ環境用）
-  const handleRedirectResult = useCallback(async () => {
-    try {
-      console.log('Google Sign-in: リダイレクト結果を確認中');
-      const result = await getRedirectResult(auth);
-      
-      if (result) {
-        console.log('Google Sign-in: リダイレクト認証成功', result.user.uid);
-        
-        const user = await createUserObject(result.user);
-        if (user) {
-          console.log('Google Sign-in: ユーザー情報作成成功', user);
-          await saveUserToFirestore(user);
-          console.log('Google Sign-in: Firestore保存成功');
-        }
-      }
-    } catch (err: any) {
-      console.error('Google Sign-in: リダイレクト結果エラー', err);
-      setError('Googleログインに失敗しました');
-    }
-  }, []);
-  
   // 認証状態の監視
   useEffect(() => {
-    console.log('AuthContext: 認証状態の監視を開始');
-    
-    // リダイレクト結果をチェック（ネイティブ環境用）
-    if (Capacitor.isNativePlatform()) {
-      handleRedirectResult();
-    }
+    console.log('=== AuthContext: 認証状態の監視を開始 ===');
+    const auth = getFirebaseAuth();
     
     // タイムアウトを設定（5秒後にローディング解除）
     const timeout = setTimeout(() => {
       console.log('AuthContext: 認証タイムアウト - ローディング解除');
-      setLoading(false);
+      if (loading) {
+        setLoading(false);
+      }
     }, 5000);
     
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('AuthContext: 認証状態変更検出', firebaseUser ? 'ユーザーあり' : 'ユーザーなし');
+      console.log('=== AuthContext: 認証状態変更検出 ===');
+      console.log('AuthContext: 変更詳細:', {
+        hasUser: !!firebaseUser,
+        uid: firebaseUser?.uid || 'なし',
+        isAnonymous: firebaseUser?.isAnonymous || false,
+        email: firebaseUser?.email || 'なし',
+        displayName: firebaseUser?.displayName || 'なし',
+        timestamp: new Date().toISOString()
+      });
       
       try {
-        const user = await createUserObject(firebaseUser);
-        if (user) {
-          await saveUserToFirestore(user);
+        if (firebaseUser) {
+          console.log('AuthContext: ユーザー情報の処理開始...');
+          const user = await createUserObject(firebaseUser);
+          if (user) {
+            console.log('AuthContext: ✅ ユーザー情報作成成功:', {
+              uid: user.uid,
+              displayName: user.displayName,
+              isAnonymous: user.isAnonymous,
+              email: user.email
+            });
+            await saveUserToFirestore(user);
+            console.log('AuthContext: ✅ Firestore保存完了');
+          } else {
+            console.warn('AuthContext: ⚠️ ユーザー情報の作成に失敗');
+          }
+          
+          setCurrentUser(user);
+          setLoading(false);
+          clearTimeout(timeout);
+          
+        } else {
+          // ユーザーがnull = ログアウト状態
+          console.log('AuthContext: 🔓 ログアウト状態を検出');
+          console.log('AuthContext: 認証状態をクリア中...');
+          
+          setCurrentUser(null);
+          setLoading(false);
+          setError(null); // エラーもクリア
+          clearTimeout(timeout);
+          
+          console.log('AuthContext: ✅ ログアウト状態の設定完了');
         }
-        setCurrentUser(user);
+        
+      } catch (error: any) {
+        console.error('=== AuthContext: ❌ ユーザー処理エラー ===');
+        console.error('AuthContext: エラー詳細:', {
+          error,
+          message: error?.message || 'Unknown error',
+          code: error?.code || 'Unknown code',
+          stack: error?.stack
+        });
+        
+        // エラー時も安全な状態に設定
+        setCurrentUser(null);
         setLoading(false);
-        clearTimeout(timeout); // 認証成功時はタイムアウトをクリア
-      } catch (error) {
-        console.error('AuthContext: ユーザー処理エラー', error);
-        setLoading(false);
+        setError('認証処理中にエラーが発生しました');
         clearTimeout(timeout);
       }
-    }, (error) => {
-      console.error('AuthContext: 認証エラー', error);
+    }, (error: any) => {
+      console.error('=== AuthContext: ❌ 認証リスナーエラー ===');
+      console.error('AuthContext: リスナーエラー詳細:', {
+        error,
+        message: error?.message || 'Unknown error',
+        code: error?.code || 'Unknown code',
+        stack: error?.stack
+      });
+      
+      // リスナーエラー時も安全な状態に設定
+      setCurrentUser(null);
       setLoading(false);
+      setError('認証リスナーでエラーが発生しました');
       clearTimeout(timeout);
     });
 
+    console.log('AuthContext: 認証状態監視のセットアップ完了');
+
     return () => {
+      console.log('=== AuthContext: 認証状態監視をクリーンアップ ===');
       unsubscribe();
       clearTimeout(timeout);
     };
-  }, [handleRedirectResult]);
+  }, []);
 
   const value = {
     currentUser,

@@ -159,26 +159,65 @@ const ProfilePage: React.FC = () => {
     }
   };
   
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+  
   // ログアウト処理
   const handleLogout = async () => {
+    console.log('=== ProfilePage: ログアウト処理開始 ===');
+    
+    // 既に処理中の場合は何もしない
+    if (isLoggingOut) {
+      console.log('ProfilePage: 既にログアウト処理中のためスキップ');
+      return;
+    }
+    
+    setIsLoggingOut(true);
+    
     try {
+      console.log('ProfilePage: logout()関数を呼び出し');
       await logout();
+      
+      console.log('ProfilePage: ログアウト成功 - トーストメッセージ表示');
       toast({
         title: 'ログアウト成功',
+        description: 'ログアウトしました',
         status: 'success',
-        duration: 3000,
+        duration: 2000,
         isClosable: true,
       });
+      
+      console.log('ProfilePage: ルートページに遷移');
       navigate('/');
-    } catch (error) {
+      
+    } catch (error: any) {
+      console.error('ProfilePage: ログアウトエラー詳細:', {
+        error,
+        message: error?.message || 'Unknown error',
+        name: error?.name || 'Unknown name',
+        stack: error?.stack
+      });
+      
+      // エラーが発生してもトーストでは成功と表示（実際には認証状態はクリアされている）
       toast({
-        title: 'ログアウトエラー',
-        description: 'ログアウトに失敗しました',
-        status: 'error',
-        duration: 3000,
+        title: 'ログアウト完了',
+        description: 'ログアウト処理が完了しました',
+        status: 'info',
+        duration: 2000,
         isClosable: true,
       });
+      
+      // エラーが発生しても強制的にルートページに遷移
+      console.log('ProfilePage: エラー発生でも強制的にルートページに遷移');
+      navigate('/');
+    } finally {
+      setIsLoggingOut(false);
     }
+    
+    // 念のため少し遅延を入れてから画面更新を確実にする
+    setTimeout(() => {
+      console.log('ProfilePage: 遅延後の強制リロード（念のため）');
+      window.location.reload();
+    }, 500);
   };
   
   // ホームに戻る
@@ -270,6 +309,17 @@ const ProfilePage: React.FC = () => {
                   {currentUser?.isAnonymous ? 'ゲストユーザー' : '登録ユーザー'}
                 </Text>
                 
+                {/* デバッグ情報 */}
+                {process.env.NODE_ENV === 'development' && (
+                  <Tooltip 
+                    label={`isAnonymous: ${currentUser?.isAnonymous}, uid: ${currentUser?.uid}`} 
+                    fontSize="xs"
+                    hasArrow
+                  >
+                    <Icon as={FaInfoCircle} color="gray.400" cursor="pointer" />
+                  </Tooltip>
+                )}
+                
                 {/* Apple Sign-inユーザーの表示 */}
                 {currentUser?.email?.includes('privaterelay.appleid.com') && (
                   <Text 
@@ -326,6 +376,23 @@ const ProfilePage: React.FC = () => {
                   colorScheme="red" 
                   w="full"
                   onClick={handleLogout}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    if (!isLoggingOut) {
+                      handleLogout();
+                    }
+                  }}
+                  isLoading={isLoggingOut}
+                  loadingText="ログアウト中..."
+                  disabled={isLoggingOut}
+                  role="button"
+                  aria-label="ログアウト"
+                  sx={{
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
+                    userSelect: 'none',
+                    cursor: 'pointer'
+                  }}
                 >
                   ログアウト
                 </Button>

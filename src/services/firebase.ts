@@ -29,25 +29,25 @@ console.log('Firebase設定:', {
 const app = initializeApp(firebaseConfig);
 
 // Capacitor環境に応じて適切な認証インスタンスを作成
-let auth: Auth;
-if (Capacitor.isNativePlatform()) {
-  console.log('Capacitorネイティブ環境で実行中 - indexedDBLocalPersistenceを使用');
-  auth = initializeAuth(app, {
-    persistence: indexedDBLocalPersistence
-  });
-} else {
-  console.log('Web環境で実行中 - 通常のgetAuth()を使用');
-  auth = getAuth(app);
-}
+// @capacitor-firebase/authentication v7.2.0 対応
+let authInstance: Auth;
+export const getFirebaseAuth = () => {
+  if (Capacitor.isNativePlatform()) {
+    if (!authInstance) {
+      console.log('Capacitorネイティブ環境 - indexedDBLocalPersistenceを使用してinitializeAuth');
+      authInstance = initializeAuth(app, {
+        persistence: indexedDBLocalPersistence
+      });
+    }
+    return authInstance;
+  } else {
+    console.log('Web環境 - 通常のgetAuth()を使用');
+    return getAuth(app);
+  }
+};
 
-// Firebase Auth設定（Capacitor環境向け）
-if (Capacitor.isNativePlatform()) {
-  // Capacitor環境では追加の設定を行う
-  console.log('Capacitor環境: Firebase Auth設定を最適化中...');
-}
-
-// サービスインスタンスをエクスポート
-export { auth };
+// 後方互換性のため
+export const auth = getFirebaseAuth();
 export const firestore = getFirestore(app);
 export const database = getDatabase(app);
 
